@@ -1,4 +1,4 @@
-# ada-2023-project-thewestbobers
+# Pivotal Movies
 
 Readme.md file containing the detailed project proposal (up to 1000 words). Your README.md should contain:
 - Title
