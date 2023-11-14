@@ -96,6 +96,7 @@ def process_countries(df):
     countries = movies_countries.explode().value_counts()
     # Top 15 countries
     countries = countries[:15]
+    countries = countries.rename({'United States of America': 'USA'})
     return countries
 
 def process_genres(df):
@@ -119,6 +120,14 @@ def data_viz(df):
     fig, axs = plt.subplots(3, 2, figsize=(10,10))
     axs = axs.ravel()
 
+    # Movies language distribution: BAR
+    movies_lang = process_lang(df)
+    axs[0].barh(movies_lang.index, movies_lang.values)
+    axs[0].set_xlabel('Nb of movies')
+    axs[0].set_title('Languages (top 15)')
+    axs[0].set_xscale('log')
+    axs[0].grid(linestyle='--', linewidth=0.5)
+
     # Movies release date distribution: HIST
     movies_year = process_year(df)
     movies_year.hist(bins=movies_year.nunique(), ax=axs[1])
@@ -126,6 +135,14 @@ def data_viz(df):
     axs[1].set_ylabel('Nb of movies')
     axs[1].set_title('Release date')
     axs[1].grid(linestyle='--', linewidth=0.5)
+
+    # Movies countries distribution: BAR
+    movies_countries = process_countries(df)
+    axs[2].barh(movies_countries.index, movies_countries.values)
+    axs[2].set_xlabel('Nb of movies')
+    axs[2].set_title('Countries (top 15)')
+    axs[2].set_xscale('log')
+    axs[2].grid(linestyle='--', linewidth=0.5)
 
     # Movies box-office distribution: PLOT
     movies_bo = process_bo(df)
@@ -136,6 +153,14 @@ def data_viz(df):
     axs[3].set_title('Box-office')
     axs[3].grid(linestyle='--', linewidth=0.5)
 
+    # Movies genres distribution: BAR
+    movies_genres = process_genres(df)
+    axs[4].barh(movies_genres.index, movies_genres.values)
+    axs[4].set_xlabel('Nb of movies')
+    axs[4].set_title('Genres (top 15)')
+    axs[4].set_xscale('log')
+    axs[4].grid(linestyle='--', linewidth=0.5)
+
     # Movies runtime distribution: PLOT
     movies_run = process_runtime(df)
     ccdf_t_x, ccdf_t_y = ccdf(movies_run)
@@ -145,32 +170,6 @@ def data_viz(df):
     axs[5].set_title('Runtime')
     axs[5].grid(linestyle='--', linewidth=0.5)
 
-    # Movies language distribution: BAR
-    movies_lang = process_lang(df)
-    axs[0].barh(movies_lang.index, movies_lang.values)
-    axs[0].set_xlabel('Nb of movies')
-    axs[0].set_title('Languages (top 15)')
-    axs[0].set_xscale('log')
-    axs[0].grid(linestyle='--', linewidth=0.5)
-
-    # Movies countries distribution: BAR
-    movies_countries = process_countries(df)
-    axs[2].barh(movies_countries.index, movies_countries.values)
-    axs[2].set_xlabel('Nb of movies')
-    axs[2].set_title('Countries (top 15)')
-    axs[2].set_xscale('log')
-    axs[2].grid(linestyle='--', linewidth=0.5)
-
-    # Movies genres distribution: BAR
-    movies_genres = process_genres(df)
-    axs[4].barh(movies_genres.index, movies_genres.values)
-    axs[4].set_xlabel('Nb of movies')
-    axs[4].set_title('Genres (top 15)')
-    axs[4].set_xscale('log')
-    axs[4].grid(linestyle='--', linewidth=0.5)
-
     plt.suptitle("Distributions of features in Movies dataset", fontsize=16)
     plt.tight_layout()
     plt.show()
-
-    return 0
