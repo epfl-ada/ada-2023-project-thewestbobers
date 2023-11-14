@@ -173,3 +173,21 @@ def data_viz(df):
     plt.suptitle("Distributions of features in Movies dataset", fontsize=16)
     plt.tight_layout()
     plt.show()
+
+    # Movies name length
+    fig, axs = plt.subplots(1, 1, figsize=(12,3))
+    movies_namelen = process_name(df)
+    movies_namelen.hist(bins=100)
+    plt.xlabel('Name lengths')
+    plt.ylabel('Nb of movies')
+    plt.title('Name length')
+    plt.grid(linestyle='--', linewidth=0.5)
+    plt.show()
+
+def data_clean(df):
+    '''Transform data and clean to have nice input'''
+    # Make list of str for genres
+    df['genres'] = df.dropna(subset=['genres'])['genres'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
+    # Make list of str for countries
+    df['countries'] = df.dropna(subset=['countries'])['countries'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
+    return df
