@@ -184,10 +184,25 @@ def data_viz(df):
     plt.grid(linestyle='--', linewidth=0.5)
     plt.show()
 
-def data_clean(df):
-    '''Transform data and clean to have nice input'''
-    # Make list of str for genres
-    df['genres'] = df.dropna(subset=['genres'])['genres'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
-    # Make list of str for countries
+def data_missing(df):
+    '''Handle missing data'''
+    # Drop nan values for date, box-office, genres
+    return df
+
+def data_format(df):
+    '''Format data types'''
+    # Transform dict to list of str for lang, countries, genres
+    df['lang'] = df.dropna(subset=['lang'])['lang'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
     df['countries'] = df.dropna(subset=['countries'])['countries'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
+    df['genres'] = df.dropna(subset=['genres'])['genres'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
+    return df
+
+def data_clean(df):
+    '''Clean data, outliers and features'''
+    return df
+
+def data_filter(df):
+    '''Filter data'''
+    # Keep only USA
+    # # movies[movies.countries=='USA']
     return df
