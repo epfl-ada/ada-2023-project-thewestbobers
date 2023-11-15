@@ -89,11 +89,19 @@ After narrowing down our list to potential movies, the next crucial step is iden
 ## Organization within the team 👥
 | Team Member | Tasks |
 |-------------|-------|
-| David       | - Work on criterion to find data similarity between plots. <br> - Find the similarity criteria for both plot and character types for potential pivotal movie subset. <br> - Analyze the results. |
-| Manuel     | - Extract data from character clusters. <br> - Creation of potential pivotal movie subset. <br> - Analyze the results. |
-| Arthur      | - Find a method to caracterize the success of a movie and method for ranking the most successful movies in a period. <br> - Creation of potential pivotal movie subset. <br> - Analyze the results. |
-| Mehdi       | - Find trends in movie history. <br> - Analyze similarity criteria for cross-genre elements. <br> - Rank the pivotal movie subset to identify the most pivotal film. <br> - Create a data story. |
-| Paul        | - Find trends in movie history. <br> - Find the similarity criteria for both plot and character types for potential pivotal movie subset. <br> - Create a data story. |
+| @David       | - Shape analysis. <br> - Extra subsets. |
+| @Manuel     | - Additional datasets. <br> - Data story. |
+| @Arthur      | - Subsets. <br> - Data story. |
+| @Mehdi       | - Visualizations. <br> - Range selection. |
+| @Paul        | - Shape analysis.<br> - Pivotal scores and metrics. |
+
+| Team Member | Tasks |
+|-------------|-------|
+| @David       | - Work on criterion to find data similarity between plots. <br> - Find the similarity criteria for both plot and character types for potential pivotal movie subset. <br> - Analyze the results. |
+| @Manuel     | - Extract data from character clusters. <br> - Creation of potential pivotal movie subset. <br> - Analyze the results. |
+| @Arthur      | - Find a method to caracterize the success of a movie and method for ranking the most successful movies in a period. <br> - Creation of potential pivotal movie subset. <br> - Analyze the results. |
+| @Mehdi       | - Find trends in movie history. <br> - Analyze similarity criteria for cross-genre elements. <br> - Rank the pivotal movie subset to identify the most pivotal film. <br> - Create a data story. |
+| @Paul        | - Find trends in movie history. <br> - Find the similarity criteria for both plot and character types for potential pivotal movie subset. <br> - Create a data story. |
 
 ## Questions for TAs 📝
 - Questions for TAs (optional): Add here any questions you have for us related to the proposed project.
