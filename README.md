@@ -16,7 +16,7 @@ Research questions we would like to address during the project:
 - In which subsets can we detect pivotal movies, with a trend shape ?
 
 ## Additional datasets 📈
-> Discuss data size and format
+- Discuss data size and format
 
 [Movielens](https://grouplens.org/datasets/movielens/) contains movie reviews (grade from 0 to 5 stars), it will allow us to compute more precise metrics.
 
