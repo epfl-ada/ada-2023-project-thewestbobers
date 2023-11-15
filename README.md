@@ -5,7 +5,9 @@ Readme.md (up to 1000 words)
 ## Abstract (150 words)
 - Abstract: A 150 word description of the project idea and goals. What’s the motivation behind your project? What story would you like to tell, and why?
 
-Pivotal movie is a movie that has influenced the industry in the subsequent years of its release, by creating a trend. To determine it, our first approach is to analyze the distribution over time of a subset (eg. genre), and identify whether an unusual shape occurs, such as a bump and high variations.
+Pivotal movie is a movie that has influenced the industry in the subsequent years of its release, by creating a trend. First, they might be good representatives of the landscape of movies diversity. But they might also be important cinematographic references.
+
+To determine a pivotal movie, our first approach is to analyze the distribution over time of a subset (eg. genre), and identify whether an unusual shape occurs, such as a bump and high variations.
 The idea would be then to select a range of movies prior to the peak, and compare their box offices and reviews. Then, we could draw from this range the pivotal movie that may have produced the particular shape.
 
 ## Research Questions
