@@ -9,9 +9,9 @@ Moreover, pivotal movies often become important cinematographic references. They
 
 Additionally, pivotal movies can have a lasting impact on film education and criticism. They become case studies in film schools, examples to be analyzed for their innovative approaches to directing, writing, cinematography, and production. Critics and scholars often refer to these films when discussing significant milestones or shifts in the film industry.
 
-In our research, it will be crucial to understands shifts in trends as well as to be able to compare the summary plots and tropes in order to find which movies influenced other movies in a deeper than only looking and the genres and revenues. 
+In our research, it will be crucial to understands shifts in trends as well as to be able to compare the summary plots and tropes in order to find which movies influenced other movies in a deeper way than only looking and the genres and revenues. 
 
-In conclusion, a pivotal movie is more than just a successful film; it's a catalyst for change and innovation in the world of cinema. It leaves an indelible mark on the industry, influencing generations of filmmakers and shaping the trajectory of film as an art form
+In conclusion, a pivotal movie is more than just a successful film; it's a catalyst for change and innovation in the world of cinema. It leaves an indelible mark on the industry, influencing generations of filmmakers and shaping the trajectory of film as an art form.
 The [CMU Movies Summary Corpus](https://www.cs.cmu.edu/~ark/personas/) contains data of movies release date, genres and box-office that are crucial for our analysis.
 
 ## Research questions 🔎
