@@ -46,8 +46,6 @@ Finally, we will elect the most probable pivotal movie of the selected range, wh
 We might investigate further metrics, such as differentiating public and press review score. We’re also thinking of the impact of inflation on the revenue (see Fig. 5). It would be interesting to adapt the box-office to the real value of money according to its release year. Then observe if this changes the pivotal movie selected.
 
 ### Further steps: ML approach
-Prediction, regression
-
 We’d like to introduce a ML approach to automate the research of pivotal movies (see Fig. 3). By selecting features that capture the “trend”, and creating a training set with movies identified as pivotal and not (from the distribution analysis approach). Then we’ll fine tune weights of the trend features to have a robust model, and apply it to the whole dataset then possibly reveal more pivotal movies.
 Maybe to reduce the complexity of the algorithm, we could analyze the dataset only by a 10-year tranche.
 FIRST IDEA OF FEATURES: subset (genre, tropes, voc), release date, box-office, review
