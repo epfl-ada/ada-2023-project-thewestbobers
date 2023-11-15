@@ -20,7 +20,7 @@ Research questions we would like to address during the project:
 
 [MovieStats](https://github.com/danielgrijalva/movie-stats) contains movies budget and box office, by scrapping IMDb, to complete missing values from our dataset.
 
-## Methods
+## Methods ⚙️
 
 ### Step 1: Pre-processing
 Pre-processing consist in formatting the data in a way that facilitate further analysis and computations. We will handle missing data and outliers, and normalize the data.
@@ -33,7 +33,9 @@ There are several ways to create a subset. It has to be relevant enough to analy
 We will start by creating simple subsets of genres. Then we will explore other ideas as extra.
 
 ## Step 3: Shape analysis
-We noticed that the number of movies over time has exploded in early 2000's (Fig. 1). Then for a robust analysis, we cannot only observe the distribution shape, but we'll have to observe the evolution of the subset fraction for each year. By plotting this curve, we are seeking an unusual shape, such as a bump or high variation. We typically recognize an unusual shape if it differs from the baseline (constant).
+We noticed that the number of movies over time has exploded in early 2000's (Fig. 1), then a rough analysis of the distribution wouldn’t be robust. To get more interesting results, we’d like to compare and visualize the evolution of fraction of movies from a specific subset. By plotting this curve, we are seeking an unusual shape, such as a bump or high variation. We typically recognize an unusual shape if it differs from the baseline (constant, for fractions).
+
+A nice visualization would be a stacked plot to combine both number of releases and fractions of subsets. Here, a problem we might encounter is the high number of genres, because that would require too many colors and overload the graph. An idea to solve this issue is to group genres into 5-10 main categories, and have a more readable plot. For example the genre “airplanes and airport” isn’t that representative yet for a first visualization, however it could be that this category reveals a peak of trend with further analysis…
 
 ## Step 4: Range selection of prior movies
 Once the unusual shape(s) has been identified, we will select a range prior to the trend peak, assuming the pivotal movie lies inside of it. It is important to choose a proper range so we don't miss the pivotal movie (too short range), and we don't predict a movie without relation (too big range). Let’s say the production of a movie takes 1 year, the first approach is to select a range of 5 prior years, which seems reasonable. Otherwise, a more precise method that requires more work and hypothesis would be to identify a bump as a roughly (skewed) gaussian curve. Then we could select a range of 1-2 standard deviations prior to the mean/median/mode (Fig. 4).
@@ -46,17 +48,11 @@ We might investigate further metrics, such as differentiating public and press r
 ## Further steps: ML approach
 Prediction, regression
 
-## Methods (Arthur) ⚙️
-There are several ways to create a subset. It has to be relevant enough to analyze a trend. The easier approach is to use genres of movies, but other methods could be interesting to investigate. For example, we could extract vocabulary from a summary (ex: spaceships). By the way, our dataset provides us very interesting substance : Harvard processed NLP which extracts tropes from summaries (type of character in a movie). Thus, we could analyze occurrences of tropes over time, and possibly draw trends.
-
-Another detail to be careful of is the normalization of data. As we can see on Fig. 1, the number of movies released exploded recently. Then a rough analysis of the distribution wouldn’t be robust. To get more interesting results, we’d like to compare and visualize the fraction of movies from a specific subset. A nice visualization would be a stacked plot to combine both number of releases and fractions of subsets. Here, a problem we may encounter is the high number of genres, because that would require too many colors and overload the graph. An idea to solve this issue is to group genres into 5-10 main categories, and have a more readable plot. For example the genre “airplanes and airport” isn’t that representative yet, for a first visualization, however it could be that this category reveals a peak of trend with further analysis…
-We’re also thinking of the impact of inflation on the revenue (see Fig. 5). It would be a good thing to adapt the box-office to the real value of money according to its release year.
-
 We’d like to introduce a ML approach to automate the research of pivotal movies (see Fig. 3). By selecting features that capture the “trend”, and creating a training set with movies identified as pivotal and not (from the distribution analysis approach). Then we’ll fine tune weights of the trend features to have a robust model, and apply it to the whole dataset then possibly reveal more pivotal movies.
 Maybe to reduce the complexity of the algorithm, we could analyze the dataset only by a 10-year tranche.
 FIRST IDEA OF FEATURES: subset (genre, tropes, voc), release date, box-office, review
 
-## Methods (Paul)⚙️
+## Methods (Paul) ⚙️
 Genre Trend Analysis : Genre Trend Analysis begins with the task of identifying trends within the dataset. To this aim the dataset is segmented into subsets of genres such as Adventure, Drama, and War Film for example. A key aspect of this analysis involves plotting the release frequency of films within each genre subset. By closely examining these plots, discernible trends can be identified. To enhance the precision of trend detection, we take a step further by analyzing the variation in the percentage share of film release in a specific genre from one year to the next. For example, we calculate the percentage increase in the market share of Sci-Fi movies in 1980 compared to 1979. A significant percentage increase indicates the emergence of a trend in Sci-Fi movies during that period. 
 
 3.	Finding a list of potential pivotal movie if any. 
