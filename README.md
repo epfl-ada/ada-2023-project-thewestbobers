@@ -55,28 +55,36 @@ After narrowing down our list to potential movies, the next crucial step is iden
 
 # Project Timeline
 
-- **27.11.23** – Finding all interesting trends 
 
-- **04.12.23** – Having a subset of pivotal movies
-  - Define and gather a subset of pivotal movies
-  
-- **8.12.23** – Analyze the similarity’s criterion
-  - Identify and define criteria for similarity analysis
-  
-- **11.12.23** – Perform similarity analysis
-  - Execute similarity analysis on the subset of movies
-  
-- **15.12.22** – Find a list of all pivotal movies and start analyzing it
-  - Expand the analysis to a comprehensive list of pivotal movies
-  
-- **18.12.22** – Finalization of project story and cleaning the code
-  - Refine the project narrative and clean up codebase
-  
-- **21.12.22** – Last corrections
-  - Address any final corrections or adjustments
-  
-- **22.12.22** – Milestone 3 deadline
-  - Submission of the project for Milestone 3
+```
+.
+├── 27.11.23 – Finding all interesting trends 
+│  
+├── 04.12.23 – Having a subset of pivotal movies
+|            - Define and gather a subset of pivotal movies
+│  
+├── 8.12.23 – Analyze the similarity’s criterion
+|           - Identify and define criteria for similarity analysis
+│  
+├── 11.12.23 – Perform similarity analysis
+|            - Execute similarity analysis on the subset of movies
+│  
+├── 15.12.23 – Find a list of all pivotal movies and start analyzing it
+|            - Expand the analysis to a comprehensive list of pivotal movies
+│    
+├── 18.12.23 – Finalization of project story and cleaning the code
+|            - Refine the project narrative and clean up codebase
+│  
+├── 21.12.23 – Last corrections
+|            - Address any final corrections or adjustments
+│  
+├── 22.12.23 – Milestone 3 deadline
+|            - Submission of the project for Milestone 3
+│  
+├── 24.12.22 - Merry Christmas!
+.
+
+```
 
 ## Organization within the team 👥
 | Team Member | Tasks |
