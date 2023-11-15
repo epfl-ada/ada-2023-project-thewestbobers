@@ -6,23 +6,28 @@ Readme.md (up to 1000 words)
 - Abstract: A 150 word description of the project idea and goals. What’s the motivation behind your project? What story would you like to tell, and why?
 
 Pivotal movie is a movie that has influenced the industry in the subsequent years of its release, by creating a trend. First, it might be a good representatives in the landscape of movies diversity. But they might also be an important cinematographic reference.
+The [CMU Movies Summary Corpus](https://www.cs.cmu.edu/~ark/personas/) contains data of movies release date, genres and box-office that are crucial for our analysis.
 
-To determine a pivotal movie, our first approach is to analyze the distribution over time of a subset (eg. genre), and identify whether an unusual shape occurs, such as a bump and high variations.
-The idea would be then to select a range of movies prior to the peak, and compare their box offices and reviews. Then, we could draw from this range the pivotal movie that may have produced the particular shape.
+Please visit our data story [here]()
 
 ## Research Questions 🔎
 Research questions we would like to address during the project:
 - Which movies are pivotal in history of cinema ?
 - How to detect them ?
-- Can we bring context to explain why are they pivotal ?
-- In which subset of movies can we detect pivotal movies, with a trend shape ?
+- Can we bring context to explain why they are pivotal ?
+- In which subsets can we detect pivotal movies, with a trend shape ?
 
 ## Additional datasets 📈
 - Proposed additional datasets (if any): List the additional dataset(s) you want to use (if any), and some ideas on how you expect to get, manage, process, and enrich it/them. Show us that you’ve read the docs and some examples, and that you have a clear idea on what to expect. Discuss data size and format if relevant. It is your responsibility to check that what you propose is feasible.
 
-To have more precise metrics, we’d like to add another dataset to use movie reviews (grade from 0 to 5 stars). We’d like to use the Movielens dataset that seems complete and clean. https://grouplens.org/datasets/movielens/ 
+[Movielens](https://grouplens.org/datasets/movielens/) contains movie reviews (grade from 0 to 5 stars), it will allow us to compute more precise metrics.
+
+[]() contains movies budget and box office.
 
 ## Methods ⚙️
+
+To determine a pivotal movie, our first approach is to analyze the distribution over time of a subset (eg. genre), and identify whether an unusual shape occurs, such as a bump and high variations.
+The idea would be then to select a range of movies prior to the peak, and compare their box offices and reviews. Then, we could draw from this range the pivotal movie that may have produced the particular shape.
 
 We typically recognize an unusual shape if it differs from the baseline. To illustrate this, notice how the subset “Teen” differs from the whole data release date distribution (Fig. 1-2).
 For this distribution analysis approach, it is important to select a good range prior to the trend peak. Let’s say the production of a movie takes 1 year, maybe we could select a range of 5 prior years. Otherwise, another method that requires more work and hypothesis would be to identify a bump as a roughly (skewed) gaussian curve. Then we could select a range of 1-2 standard deviations prior to the mean-median-mode. (Fig. 4)
