@@ -8,8 +8,6 @@ Readme.md (up to 1000 words)
 Pivotal movie is a movie that has influenced the industry in the subsequent years of its release, by creating a trend. First, it might be a good representatives in the landscape of movies diversity. But they might also be an important cinematographic reference.
 The [CMU Movies Summary Corpus](https://www.cs.cmu.edu/~ark/personas/) contains data of movies release date, genres and box-office that are crucial for our analysis.
 
-Please visit our data story [here]()
-
 ## Research Questions 🔎
 Research questions we would like to address during the project:
 - Which movies are pivotal in history of cinema ?
