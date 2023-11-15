@@ -10,19 +10,19 @@ Pivotal movie is a movie that has influenced the industry in the subsequent year
 To determine a pivotal movie, our first approach is to analyze the distribution over time of a subset (eg. genre), and identify whether an unusual shape occurs, such as a bump and high variations.
 The idea would be then to select a range of movies prior to the peak, and compare their box offices and reviews. Then, we could draw from this range the pivotal movie that may have produced the particular shape.
 
-## Research Questions
+## Research Questions 🔎
 Research questions we would like to address during the project:
 - Which movies are pivotal in history of cinema ?
 - How to detect them ?
 - Can we bring context to explain why are they pivotal ?
 - In which subset of movies can we detect pivotal movies, with a trend shape ?
 
-## Additional datasets
+## Additional datasets 📈
 - Proposed additional datasets (if any): List the additional dataset(s) you want to use (if any), and some ideas on how you expect to get, manage, process, and enrich it/them. Show us that you’ve read the docs and some examples, and that you have a clear idea on what to expect. Discuss data size and format if relevant. It is your responsibility to check that what you propose is feasible.
 
 To have more precise metrics, we’d like to add another dataset to use movie reviews (grade from 0 to 5 stars). We’d like to use the Movielens dataset that seems complete and clean. https://grouplens.org/datasets/movielens/ 
 
-## Methods
+## Methods ⚙️
 
 We typically recognize an unusual shape if it differs from the baseline. To illustrate this, notice how the subset “Teen” differs from the whole data release date distribution (Fig. 1-2).
 For this distribution analysis approach, it is important to select a good range prior to the trend peak. Let’s say the production of a movie takes 1 year, maybe we could select a range of 5 prior years. Otherwise, another method that requires more work and hypothesis would be to identify a bump as a roughly (skewed) gaussian curve. Then we could select a range of 1-2 standard deviations prior to the mean-median-mode. (Fig. 4)
@@ -38,10 +38,10 @@ We’d like to introduce a ML approach to automate the research of pivotal movie
 Maybe to reduce the complexity of the algorithm, we could analyze the dataset only by a 10-year tranche.
 FIRST IDEA OF FEATURES: subset (genre, tropes, voc), release date, box-office, review
 
-## Proposed timeline
+## Proposed timeline ⏳
 
-## Organization within the team
+## Organization within the team 👥
 - Organization within the team: A list of internal milestones up until project Milestone P3.
 
-## Questions for TAs
+## Questions for TAs ?
 - Questions for TAs (optional): Add here any questions you have for us related to the proposed project.
