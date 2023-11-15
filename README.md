@@ -20,7 +20,7 @@ Research questions we would like to address during the project:
 
 [Movielens](https://grouplens.org/datasets/movielens/) contains movie reviews (grade from 0 to 5 stars), it will allow us to compute more precise metrics.
 
-[]() contains movies budget and box office.
+[MovieStats](https://github.com/danielgrijalva/movie-stats) contains movies budget and box office, by scrapping IMDb, to complete missing values from our dataset.
 
 ## Methods (Arthur)⚙️
 
