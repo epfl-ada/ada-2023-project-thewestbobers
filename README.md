@@ -82,13 +82,10 @@ After narrowing down our list to potential movies, the next crucial step is iden
 ├── 18.12.23 – Finalization of project story and cleaning the code
 |            - Refine the project narrative and clean up codebase
 │  
-├── 21.12.23 – Last corrections
+├── 21.12.23 – Final corrections
 |            - Address any final corrections or adjustments
 │  
 ├── 22.12.23 – Milestone 3 deadline
-|            - Submission of the project for Milestone 3
-│  
-├── 24.12.22 - Merry Christmas!
 .
 
 ```
