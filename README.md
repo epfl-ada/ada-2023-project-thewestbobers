@@ -3,8 +3,6 @@
 Readme.md (up to 1000 words)
 
 ## Abstract (150 words)
-- Abstract: A 150 word description of the project idea and goals. What’s the motivation behind your project? What story would you like to tell, and why?
-
 Pivotal movie is a movie that has influenced the industry in the subsequent years of its release, by creating a trend. First, it might be a good representatives in the landscape of movies diversity. But they might also be an important cinematographic reference.
 The [CMU Movies Summary Corpus](https://www.cs.cmu.edu/~ark/personas/) contains data of movies release date, genres and box-office that are crucial for our analysis.
 
@@ -22,16 +20,33 @@ Research questions we would like to address during the project:
 
 [MovieStats](https://github.com/danielgrijalva/movie-stats) contains movies budget and box office, by scrapping IMDb, to complete missing values from our dataset.
 
-## Methods (Arthur)⚙️
+## Methods
 
-To determine a pivotal movie, our first approach is to analyze the distribution over time of a subset (eg. genre), and identify whether an unusual shape occurs, such as a bump and high variations.
-The idea would be then to select a range of movies prior to the peak, and compare their box offices and reviews. Then, we could draw from this range the pivotal movie that may have produced the particular shape.
+### Step 1: Pre-processing
+Pre-processing consist in formatting the data in a way that facilitate further analysis and computations. We will handle missing data and outliers, and normalize the data.
 
-We typically recognize an unusual shape if it differs from the baseline. To illustrate this, notice how the subset “Teen” differs from the whole data release date distribution (Fig. 1-2).
-For this distribution analysis approach, it is important to select a good range prior to the trend peak. Let’s say the production of a movie takes 1 year, maybe we could select a range of 5 prior years. Otherwise, another method that requires more work and hypothesis would be to identify a bump as a roughly (skewed) gaussian curve. Then we could select a range of 1-2 standard deviations prior to the mean-median-mode. (Fig. 4)
+We will also filter the dataset, to be more precise on the data covered. We decided to focus on the movies produced by the US. We could introduce more filtering later if needed…
 
-We’ll filter the dataset, to be more precise on the data covered. We decided to focus on the movies produced by the US. We may introduce more filtering later if needed…
+### Step 2: Subsets
+There are several ways to create a subset. It has to be relevant enough to analyze a trend. The easier approach is to use genres of movies, but other methods could be interesting to investigate. For example, we could extract vocabulary from a summary (ex: spaceships). By the way, our dataset provides us very interesting substance : processed NLP which extracts tropes from summaries (type of character in a movie). Thus, we could analyze occurrences of tropes over time, and possibly draw trends.
 
+We will start by creating simple subsets of genres. Then we will explore other ideas as extra.
+
+## Step 3: Shape analysis
+We noticed that the number of movies over time has exploded in early 2000's (Fig. 1). Then for a robust analysis, we cannot only observe the distribution shape, but we'll have to observe the evolution of the subset fraction for each year. By plotting this curve, we are seeking an unusual shape, such as a bump or high variation. We typically recognize an unusual shape if it differs from the baseline (constant).
+
+## Step 4: Range selection of prior movies
+Once the unusual shape(s) has been identified, we will select a range prior to the trend peak, assuming the pivotal movie lies inside of it. It is important to choose a proper range so we don't miss the pivotal movie (too short range), and we don't predict a movie without relation (too big range). Let’s say the production of a movie takes 1 year, the first approach is to select a range of 5 prior years, which seems reasonable. Otherwise, a more precise method that requires more work and hypothesis would be to identify a bump as a roughly (skewed) gaussian curve. Then we could select a range of 1-2 standard deviations prior to the mean/median/mode (Fig. 4).
+
+## Step 5: Pivotal Score
+Finally, we will elect the most probable pivotal movie of the selected range, which maximizes a score. From our definition of pivotal movie, the score would be based on money generated (which reflects how many people watched the movie) and public advise (how was the movie recieved). The metrics used here would be box-office and review score. Then if several movies reached the top score within a certain threshold, our intuition is to prefer the earliest movie released, because it would be the most likely to influence later releases.
+
+We might investigate further metrics, such as differentiating public and press review score. We’re also thinking of the impact of inflation on the revenue (see Fig. 5). It would be interesting to adapt the box-office to the real value of money according to its release year. Then observe if this changes the pivotal movie selected.
+
+## Further steps: ML approach
+Prediction, regression
+
+## Methods (Arthur) ⚙️
 There are several ways to create a subset. It has to be relevant enough to analyze a trend. The easier approach is to use genres of movies, but other methods could be interesting to investigate. For example, we could extract vocabulary from a summary (ex: spaceships). By the way, our dataset provides us very interesting substance : Harvard processed NLP which extracts tropes from summaries (type of character in a movie). Thus, we could analyze occurrences of tropes over time, and possibly draw trends.
 
 Another detail to be careful of is the normalization of data. As we can see on Fig. 1, the number of movies released exploded recently. Then a rough analysis of the distribution wouldn’t be robust. To get more interesting results, we’d like to compare and visualize the fraction of movies from a specific subset. A nice visualization would be a stacked plot to combine both number of releases and fractions of subsets. Here, a problem we may encounter is the high number of genres, because that would require too many colors and overload the graph. An idea to solve this issue is to group genres into 5-10 main categories, and have a more readable plot. For example the genre “airplanes and airport” isn’t that representative yet, for a first visualization, however it could be that this category reveals a peak of trend with further analysis…
