@@ -9,8 +9,7 @@ Pivotal movie is a movie that has influenced the industry in the subsequent year
 The idea would be then to select a range of movies prior to the peak, and compare their box offices and reviews. Then, we could draw from this range the pivotal movie that may have produced the particular shape.
 
 ## Research Questions
-- Research Questions: A list of research questions you would like to address during the project.
-
+Research questions we would like to address during the project:
 - Which movies are pivotal in history of cinema ?
 - How to detect them ?
 - Can we bring context to explain why are they pivotal ?
