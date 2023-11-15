@@ -43,5 +43,5 @@ FIRST IDEA OF FEATURES: subset (genre, tropes, voc), release date, box-office, r
 ## Organization within the team 👥
 - Organization within the team: A list of internal milestones up until project Milestone P3.
 
-## Questions for TAs ?
+## Questions for TAs 📝
 - Questions for TAs (optional): Add here any questions you have for us related to the proposed project.
