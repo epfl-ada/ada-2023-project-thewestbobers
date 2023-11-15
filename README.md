@@ -65,25 +65,23 @@ After narrowing down our list to potential movies, the next crucial step is iden
 ## Proposed timeline ⏳
 ```
 .
-├── 27.11.23 – Finding all interesting trends 
+├── 27.11.23 – Pre-processing and additionnal datasets
 │  
-├── 04.12.23 – Having a subset of pivotal movies
-|            - Define and gather a subset of pivotal movies
+├── 04.12.23 – Create subsets for analyzing
 │  
-├── 8.12.23 – Analyze the similarity’s criterion
-|           - Identify and define criteria for similarity analysis
+├── 08.12.23 - Shape analysis of subsets and range selections
 │  
-├── 11.12.23 – Perform similarity analysis
-|            - Execute similarity analysis on the subset of movies
+├── 11.12.23 – Pivotal scores and metrics
 │  
-├── 15.12.23 – Find a list of all pivotal movies and start analyzing it
-|            - Expand the analysis to a comprehensive list of pivotal movies
+├── 15.12.23 – Further investigate
+│            ├── Extra subsets
+│            ├── Tune range selection
+│            ├── Tune metrics
+│            ├── ML approach
 │    
-├── 18.12.23 – Finalization of project story and cleaning the code
-|            - Refine the project narrative and clean up codebase
+├── 18.12.23 – Data story
 │  
-├── 21.12.23 – Final corrections
-|            - Address any final corrections or adjustments
+├── 20.12.23 – Final touch
 │  
 ├── 22.12.23 – Milestone 3 deadline
 .
