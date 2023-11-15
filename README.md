@@ -3,7 +3,15 @@
 Readme.md (up to 1000 words)
 
 ## Abstract (150 words)
-Pivotal movie is a movie that has influenced the industry in the subsequent years of its release, by creating a trend. First, it might be a good representatives in the landscape of movies diversity. But they might also be an important cinematographic reference.
+A pivotal movie can be characterized as a film that has significantly influenced the film industry in the years following its release. It often sets a trend, defining new standards or introducing innovative concepts in filmmaking. Firstly, such movies serve as key representatives in showcasing the diversity and evolution of the cinematic landscape. They may introduce new genres, revive old ones, or blend different styles in unique ways, thereby enriching the variety of films available to audiences.
+
+Moreover, pivotal movies often become important cinematographic references. They might pioneer new techniques in visual effects, storytelling, or character development, which future filmmakers adopt or adapt in their work. These films could also push the boundaries of societal norms and taboos, prompting discussions and inspiring changes in both the film industry and society at large. Their influence is seen not only in the thematic and stylistic choices of subsequent movies but also in how they redefine audience expectations and perceptions of cinema.
+
+Additionally, pivotal movies can have a lasting impact on film education and criticism. They become case studies in film schools, examples to be analyzed for their innovative approaches to directing, writing, cinematography, and production. Critics and scholars often refer to these films when discussing significant milestones or shifts in the film industry.
+
+In our research, it will be crucial to understands shifts in trends as well as to be able to compare the summary plots and tropes in order to find which movies influenced other movies in a deeper than only looking and the genres and revenues. 
+
+In conclusion, a pivotal movie is more than just a successful film; it's a catalyst for change and innovation in the world of cinema. It leaves an indelible mark on the industry, influencing generations of filmmakers and shaping the trajectory of film as an art form
 The [CMU Movies Summary Corpus](https://www.cs.cmu.edu/~ark/personas/) contains data of movies release date, genres and box-office that are crucial for our analysis.
 
 ## Research questions 🔎
@@ -89,19 +97,11 @@ After narrowing down our list to potential movies, the next crucial step is iden
 ## Organization within the team 👥
 | Team Member | Tasks |
 |-------------|-------|
-| @David       | - Shape analysis. <br> - Extra subsets. |
-| @Manuel     | - Additional datasets. <br> - Data story. |
-| @Arthur      | - Subsets. <br> - Data story. |
-| @Mehdi       | - Visualizations. <br> - Range selection. |
-| @Paul        | - Shape analysis.<br> - Pivotal scores and metrics. |
-
-| Team Member | Tasks |
-|-------------|-------|
-| @David       | - Work on criterion to find data similarity between plots. <br> - Find the similarity criteria for both plot and character types for potential pivotal movie subset. <br> - Analyze the results. |
-| @Manuel     | - Extract data from character clusters. <br> - Creation of potential pivotal movie subset. <br> - Analyze the results. |
-| @Arthur      | - Find a method to caracterize the success of a movie and method for ranking the most successful movies in a period. <br> - Creation of potential pivotal movie subset. <br> - Analyze the results. |
-| @Mehdi       | - Find trends in movie history. <br> - Analyze similarity criteria for cross-genre elements. <br> - Rank the pivotal movie subset to identify the most pivotal film. <br> - Create a data story. |
-| @Paul        | - Find trends in movie history. <br> - Find the similarity criteria for both plot and character types for potential pivotal movie subset. <br> - Create a data story. |
+| David       | - Work on criterion to find data similarity between plots. <br> - Find the similarity criteria for both plot and character types for potential pivotal movie subset. <br> - Analyze the results. |
+| Manuel     | - Extract data from character clusters. <br> - Creation of potential pivotal movie subset. <br> - Analyze the results. |
+| Arthur      | - Find a method to caracterize the success of a movie and method for ranking the most successful movies in a period. <br> - Creation of potential pivotal movie subset. <br> - Analyze the results. |
+| Mehdi       | - Find trends in movie history. <br> - Analyze similarity criteria for cross-genre elements. <br> - Rank the pivotal movie subset to identify the most pivotal film. <br> - Create a data story. |
+| Paul        | - Find trends in movie history. <br> - Find the similarity criteria for both plot and character types for potential pivotal movie subset. <br> - Create a data story. |
 
 ## Questions for TAs 📝
 - Questions for TAs (optional): Add here any questions you have for us related to the proposed project.
