@@ -89,11 +89,11 @@ After narrowing down our list to potential movies, the next crucial step is iden
 ## Organization within the team 👥
 | Team Member | Tasks |
 |-------------|-------|
-| @David       | Shape analysis. <br> - Extra subsets. |
-| @Manuel     | Additional datasets. <br> - Data story. |
-| @Arthur      | Subsets. <br> - Data story. |
-| @Mehdi       | Visualizations. <br> - Range selection. |
-| @Paul        | Shape analysis.<br> - Pivotal scores and metrics. |
+| @David       | - Shape analysis. <br> - Extra subsets. |
+| @Manuel     | - Additional datasets. <br> - Data story. |
+| @Arthur      | - Subsets. <br> - Data story. |
+| @Mehdi       | - Visualizations. <br> - Range selection. |
+| @Paul        | - Shape analysis.<br> - Pivotal scores and metrics. |
 
 | Team Member | Tasks |
 |-------------|-------|
