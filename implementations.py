@@ -187,14 +187,19 @@ def data_viz(df):
 def data_missing(df):
     '''Handle missing data'''
     # Drop nan values for date, box-office, genres
+    df = df.dropna(subset=['date'])
+    df = df.dropna(subset=['box_office'])
+    df = df.dropna(subset=['genres'])
     return df
 
 def data_format(df):
     '''Format data types'''
     # Transform dict to list of str for lang, countries, genres
-    df['lang'] = df.dropna(subset=['lang'])['lang'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
-    df['countries'] = df.dropna(subset=['countries'])['countries'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
-    df['genres'] = df.dropna(subset=['genres'])['genres'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
+    df['lang'] = df['lang'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
+    df['countries'] = df['countries'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
+    df['genres'] = df['genres'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
+    # Use USA instead of United States of America
+    df['countries'] = df['countries'].apply(lambda x: ['USA' if country == 'United States of America' else country for country in x])
     return df
 
 def data_clean(df):
