@@ -36,13 +36,15 @@ def ccdf(x):
     # Return the sorted 'x' values and CCDF values.
     return ccdf_x, ccdf_y
 
-def ax_settings(ax, xlabel='', ylabel='', title='', logx=False):
+def ax_settings(ax, xlabel='', ylabel='', title='', logx=False, logy=False):
     '''Edit ax parameters for plotting'''
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title(title)
     if logx:
         ax.set_xscale('log')
+    if logy:
+        ax.set_yscale('log')
     ax.grid(linestyle='--', linewidth=0.5)
 
 def dict_to_list(x):
@@ -171,6 +173,8 @@ def data_clean(df):
     '''Clean data, outliers and features'''
     # Outliers, date before 1800
     df = df.drop(df.index[df['date']<1800])
+    # Redundant movies
+    ## TODO: mehdi
     return df
 
 def data_filter(df):
