@@ -36,139 +36,97 @@ def ccdf(x):
     # Return the sorted 'x' values and CCDF values.
     return ccdf_x, ccdf_y
 
-def process_name(df):
-    '''Process feature for plotting
-    Extract name lengths'''
-    movies_name = df.dropna(subset=['name'])['name']
-    name_len = movies_name.apply(lambda x: len(x))
-    return name_len
+def ax_settings(ax, xlabel='', ylabel='', title='', logx=False):
+    '''Edit ax parameters for plotting'''
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    if logx:
+        ax.set_xscale('log')
+    ax.grid(linestyle='--', linewidth=0.5)
 
-def process_year(df):
-    '''Process feature for plotting
-    Extract release year in format yyyy (int)'''
-    movies_year = df.dropna(subset=['date'])['date']
-    # Process dates like: yyyy-mm and yyyy-mm-dd
-    movies_year = movies_year.str.replace(r'-\d{2}-\d{2}$', '', regex=True)
-    movies_year = movies_year.str.replace(r'-\d{2}$', '', regex=True)
-    # Convert data type to int
-    movies_year = movies_year.astype(int)
-    # Drop outliers
-    movies_year = movies_year.drop(movies_year.index[movies_year<1800])
-    return movies_year
+def dict_to_list(x):
+    '''Convert data type (str) to dict, to list'''
+    x = x.apply(lambda x: ast.literal_eval(x))
+    x = x.apply(lambda x: list(x.values()))
+    return x
 
-def process_bo(df):
-    '''Process feature for plotting
-    Extract box-office in format (int)'''
-    movies_bo = df.dropna(subset=['box_office'])['box_office']
-    movies_bo = movies_bo.astype(int)
-    return movies_bo
+def date_to_yyyy(x):
+    '''Convert date yyyy-mm-dd (str) to yyyy (int)'''
+    x = x.str.replace(r'-\d{2}-\d{2}$', '', regex=True)
+    x = x.str.replace(r'-\d{2}$', '', regex=True)
+    x = x.astype(int)
+    return x
 
-def process_runtime(df):
-    '''Process feature for plotting
-    Extract runtime in format (int)'''
-    movies_t = df.dropna(subset=['runtime'])['runtime']
-    movies_t = movies_t.astype(int)
-    return movies_t
+def top_count(x, top=15):
+    rank = x.explode().value_counts()[:top]
+    return rank
 
-def process_lang(df):
-    '''Process feature for plotting
-    Extract top 15 language in format (str)'''
-    movies_lang = df.dropna(subset=['lang'])['lang']
-    # Convert data type to dict, to array
-    movies_lang = movies_lang.apply(lambda x: ast.literal_eval(x))
-    movies_lang = movies_lang.apply(lambda x: list(x.values()))
-    # Get unique languages
-    langs = movies_lang.explode().value_counts()
-    # Top 15 languages
-    langs = langs[:15]
-    # Drop redundances in strings
-    langs.index = langs.index.str.replace(' Language', '', regex=False)
-    return langs
-
-def process_countries(df):
-    '''Process feature for plotting
-    Extract top 15 countries in format (str)'''
-    movies_countries = df.dropna(subset=['countries'])['countries']
-    # Convert data type to dict, to array
-    movies_countries = movies_countries.apply(lambda x: ast.literal_eval(x))
-    movies_countries = movies_countries.apply(lambda x: list(x.values()))
-    # Get unique countries
-    countries = movies_countries.explode().value_counts()
-    # Top 15 countries
-    countries = countries[:15]
-    countries = countries.rename({'United States of America': 'USA'})
-    return countries
-
-def process_genres(df):
-    '''Process feature for plotting
-    Extract top 15 genres in format (str)'''
-    movies_genre = df.dropna(subset=['genres'])['genres']
-    # Convert data type to dict, to array
-    movies_genre = movies_genre.apply(lambda x: ast.literal_eval(x))
-    movies_genre = movies_genre.apply(lambda x: list(x.values()))
-    # Get unique genres
-    genres = movies_genre.explode().value_counts()
-    # Top 15 genres
-    genres = genres[:15]
-    return genres
-
-def data_viz(df):
-    '''Movies dataset features distributions
-    For clean visualization, we simply drop nan values'''
+def data_viz(df, israw=False):
+    '''Movies dataset features distributions'''
 
     # Create subplots
     fig, axs = plt.subplots(3, 2, figsize=(10,10))
     axs = axs.ravel()
 
     # Movies language distribution: BAR
-    movies_lang = process_lang(df)
-    axs[0].barh(movies_lang.index, movies_lang.values)
-    axs[0].set_xlabel('Nb of movies')
-    axs[0].set_title('Languages (top 15)')
-    axs[0].set_xscale('log')
-    axs[0].grid(linestyle='--', linewidth=0.5)
+    if israw:
+        movies_lang = df.dropna(subset=['lang'])['lang']
+        movies_lang = dict_to_list(movies_lang)
+    else:
+        movies_lang = df.lang
+    langs = top_count(movies_lang)
+    langs.index = langs.index.str.replace(' Language', '', regex=False) # Drop redundances in strings
+    axs[0].barh(langs.index, langs.values)
+    ax_settings(axs[0], xlabel='Nb of movies', title='Languages (top 15)', logx=True)
 
     # Movies release date distribution: HIST
-    movies_year = process_year(df)
+    if israw:
+        movies_year = df.dropna(subset=['date'])['date']
+        movies_year = date_to_yyyy(movies_year)
+        movies_year = movies_year.drop(movies_year.index[movies_year<1800]) # Drop outliers
+    else:
+        movies_year = df.date
     movies_year.hist(bins=movies_year.nunique(), ax=axs[1])
-    axs[1].set_xlabel('Year')
-    axs[1].set_ylabel('Nb of movies')
-    axs[1].set_title('Release date')
-    axs[1].grid(linestyle='--', linewidth=0.5)
+    ax_settings(axs[1], xlabel='Year', ylabel='Nb of movies', title='Release date')
 
     # Movies countries distribution: BAR
-    movies_countries = process_countries(df)
-    axs[2].barh(movies_countries.index, movies_countries.values)
-    axs[2].set_xlabel('Nb of movies')
-    axs[2].set_title('Countries (top 15)')
-    axs[2].set_xscale('log')
-    axs[2].grid(linestyle='--', linewidth=0.5)
+    if israw:
+        movies_countries = df.dropna(subset=['countries'])['countries']
+        movies_countries = dict_to_list(movies_countries)
+    else:
+        movies_countries = df.countries
+    countries = top_count(movies_countries)
+    axs[2].barh(countries.index, countries.values)
+    ax_settings(axs[2], xlabel='Nb of movies', title='Countries (top 15)', logx=True)
 
     # Movies box-office distribution: PLOT
-    movies_bo = process_bo(df)
+    if israw:
+        movies_bo = df.dropna(subset=['box_office'])['box_office']
+    else:
+        movies_bo = df.box_office
     ccdf_bo_x, ccdf_bo_y = ccdf(movies_bo)
     axs[3].loglog(ccdf_bo_x, ccdf_bo_y)
-    axs[3].set_xlabel('Box-office [$]')
-    axs[3].set_ylabel('CCDF')
-    axs[3].set_title('Box-office')
-    axs[3].grid(linestyle='--', linewidth=0.5)
+    ax_settings(axs[3], xlabel='Box-office [$]', ylabel='CCDF', title='Box-office')
 
     # Movies genres distribution: BAR
-    movies_genres = process_genres(df)
-    axs[4].barh(movies_genres.index, movies_genres.values)
-    axs[4].set_xlabel('Nb of movies')
-    axs[4].set_title('Genres (top 15)')
-    axs[4].set_xscale('log')
-    axs[4].grid(linestyle='--', linewidth=0.5)
+    if israw:
+        movies_genres = df.dropna(subset=['genres'])['genres']
+        movies_genres = dict_to_list(movies_genres)
+    else:
+        movies_genres = df.genres
+    genres = top_count(movies_genres)
+    axs[4].barh(genres.index, genres.values)
+    ax_settings(axs[4], xlabel='Nb of movies', title='Genres (top 15)', logx=True)
 
     # Movies runtime distribution: PLOT
-    movies_run = process_runtime(df)
+    if israw:
+        movies_run = df.dropna(subset=['runtime'])['runtime']
+    else:
+        movies_run = df.runtime
     ccdf_t_x, ccdf_t_y = ccdf(movies_run)
     axs[5].loglog(ccdf_t_x, ccdf_t_y)
-    axs[5].set_xlabel('Runtime [min]')
-    axs[5].set_ylabel('CCDF')
-    axs[5].set_title('Runtime')
-    axs[5].grid(linestyle='--', linewidth=0.5)
+    ax_settings(axs[4], xlabel='Runtime [min]', ylabel='CCDF', title='Runtime')
 
     plt.suptitle("Distributions of features in Movies dataset", fontsize=16)
     plt.tight_layout()
@@ -176,7 +134,10 @@ def data_viz(df):
 
     # Movies name length
     fig, axs = plt.subplots(1, 1, figsize=(12,3))
-    movies_namelen = process_name(df)
+    if israw:
+        movies_namelen = df.dropna(subset=['name'])['name'].apply(lambda x: len(x))
+    else:
+        movies_namelen = df.name.apply(lambda x: len(x))
     movies_namelen.hist(bins=100)
     plt.xlabel('Name lengths')
     plt.ylabel('Nb of movies')
@@ -200,14 +161,22 @@ def data_format(df):
     df['genres'] = df['genres'].apply(lambda x: ast.literal_eval(x)).apply(lambda x: list(x.values()))
     # Use USA instead of United States of America
     df['countries'] = df['countries'].apply(lambda x: ['USA' if country == 'United States of America' else country for country in x])
+    # Transform date to yyyy (int)
+    df['date'] = df['date'].str.replace(r'-\d{2}-\d{2}$', '', regex=True)
+    df['date'] = df['date'].str.replace(r'-\d{2}$', '', regex=True)
+    df['date'] = df['date'].astype(int)
     return df
 
 def data_clean(df):
     '''Clean data, outliers and features'''
+    # Outliers, date before 1800
+    df = df.drop(df.index[df['date']<1800])
     return df
 
 def data_filter(df):
     '''Filter data'''
     # Keep only USA
-    # # movies[movies.countries=='USA']
+    df = df[df.countries.apply(lambda x: 'USA' in x)]
+    # Keep only english movies
+    df = df[df.lang.apply(lambda x: 'English Language' in x)]
     return df
