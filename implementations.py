@@ -288,6 +288,7 @@ def get_initial_data(PATH_HEADER):
     movies = pd.read_csv(PATH_HEADER + MOVIE, sep='\t', names=column_names, header=None)
     parse_genre(movies)
     date_conversion(movies)
+    movies = movies.dropna()
     return summaries, characters, tvtropes, movies
 
 def trope_originators(tvtropes, movies):
