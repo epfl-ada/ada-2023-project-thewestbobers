@@ -82,12 +82,12 @@ def data_viz(df, israw=False):
 
     # Movies release date distribution: HIST
     if israw:
-        movies_year = df.dropna(subset=['date'])['date']
-        movies_year = date_to_yyyy(movies_year)
-        movies_year = movies_year.drop(movies_year.index[movies_year<1800]) # Drop outliers
+        movies_date = df.dropna(subset=['date'])['date']
+        movies_date = date_to_yyyy(movies_date)
+        movies_date = movies_date.drop(movies_date.index[movies_date<1800]) # Drop outliers
     else:
-        movies_year = df.date
-    movies_year.hist(bins=movies_year.nunique(), ax=axs[1])
+        movies_date = df.date
+    movies_date.hist(bins=movies_date.nunique(), ax=axs[1])
     ax_settings(axs[1], xlabel='Year', ylabel='Nb of movies', title='Release date')
 
     # Movies countries distribution: BAR
@@ -180,3 +180,8 @@ def data_filter(df):
     # Keep only english movies
     df = df[df.lang.apply(lambda x: 'English Language' in x)]
     return df
+
+def create_subset(df, key):
+    '''Creating a subset by selecting a specific genre (key)'''
+    subset = df[df['genres'].apply(lambda x: key in x)]
+    return subset
