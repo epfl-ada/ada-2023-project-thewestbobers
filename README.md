@@ -13,9 +13,11 @@ Research questions we would like to address during the project:
 - In which subsets can we detect pivotal movies, with a trend shape?
 
 ## Additional datasets 📈
-[Movielens](https://grouplens.org/datasets/movielens/) contains 45'466 movie including reviews (grade from 0 to 5), it will allow us to compute more precise metrics.
+[Movielens](https://grouplens.org/datasets/movielens/) contains 45'466 movie including budget, box office and reviews, it will allow us to compute more precise metrics.
 
-[MovieStats](https://github.com/danielgrijalva/movie-stats) contains 7'668 movies including budget, box office and reviews (grade from 0 to 10), by scrapping IMDb between 1980 and 2010 to complete missing values from our dataset and compute more precise metrics.
+[MovieStats](https://github.com/danielgrijalva/movie-stats) contains 7'668 movies including budget, box office and reviews, by scrapping IMDb between 1980 and 2010 to complete missing values from our dataset and compute more precise metrics.
+
+We might use more datasets in the future to cover lack of data (particulary box-office and reviews).
 
 ## Methods ⚙️
 
