@@ -37,6 +37,133 @@ def ccdf(x):
     # Return the sorted 'x' values and CCDF values.
     return ccdf_x, ccdf_y
 
+def generate_missing_info(df):
+    """
+    Generate a DataFrame containing information about missing data in each column of the given DataFrame.
+
+    Parameters:
+    - df (pd.DataFrame): The input DataFrame.
+
+    Returns:
+    - pd.DataFrame: DataFrame with columns 'Column' and 'Missing Data (%)'.
+    """
+    missing_percentage = (df.isna().mean() * 100).round(2)
+
+    missing_info = pd.DataFrame({
+        'Column': missing_percentage.index,
+        'Missing Data (%)': missing_percentage.values
+    }).set_index("Column")
+
+    return missing_info
+
+def check_doublons(df, col_check, year, runtime):
+    for c in col_check:
+        duplicates = df[df.duplicated([c, year, runtime], keep=False)]  
+        if not duplicates.empty:
+            print(f'Rows with real duplicates: ')
+            print(duplicates[[c, year, runtime]])
+            print('-' * 80)
+        else:
+            print(f'No duplicates')
+            print('-' * 80)
+    return None
+
+
+def fuse_duplicates(df, col_check, year, runtime, col_len, col_null):
+    df_clean = df.copy(deep=True)
+    df_clean[runtime] = df_clean[runtime].fillna(-1)
+    for c in col_check:
+        duplicates = df_clean[df_clean.duplicated([c, year, runtime], keep=False)]  
+        if not duplicates.empty:
+            print(f'Fusing duplicates: ')
+
+            for index, group in duplicates.groupby([c, year, runtime]):
+                if len(group) > 1:
+                    higher_index = group.index.max()
+                    lower_index = group.index.min()
+                    # Fuse 'languages', 'countries', 'genres'
+                    for col in col_len:
+                        if len(group.loc[higher_index, col]) > len(group.loc[lower_index, col]):
+                            df_clean.at[lower_index, col] = group.loc[higher_index, col]
+                    # Fuse 'release_month', 'box_office_revenue', 'runtime'
+                    for col in col_null:
+                        if pd.isnull(group.loc[lower_index, col]) and not pd.isnull(group.loc[higher_index, col]):
+                            df_clean.at[lower_index, col] = group.loc[higher_index, col]
+                        elif not pd.isnull(group.loc[lower_index, col]) and not pd.isnull(group.loc[higher_index, col]):
+                            if group.loc[lower_index, col] != group.loc[higher_index, col]:
+                                # Calculate mean if values are different
+                                mean_value = group.loc[:, col].mean()
+                                df_clean.at[lower_index, col] = mean_value
+
+                    df_clean = df_clean.drop(higher_index)
+
+            print('Duplicates fused successfully.')
+            print('-' * 80)
+        else:
+            print(f'No duplicates')
+            print('-' * 80)
+    
+    df_clean[runtime] = df_clean[runtime].replace(-1, pd.NA)
+    return df_clean.reset_index(drop=True)
+
+# def separate_values_biased(df, col, target):
+#     new_cols = df[col].str.split(', ', expand=True).rename(columns=lambda x: f"{col}_{x+1}")
+#     usa_column = new_cols.apply(lambda row: target in row.values, axis=1)
+#     df[col] = np.where(usa_column, target, new_cols.iloc[:, 0]) 
+#     return df
+
+def separate_values_biased(df, col, target):
+    def choose_country(country_list):
+        if target in country_list:
+            return target
+        elif country_list:
+            return country_list[0]
+        else:
+            return np.nan 
+    df[col] = df[col].apply(lambda x: choose_country(eval(x) if isinstance(x, str) else x))
+    return df
+
+def calculate_missing_percentage(df, groupby_column, target_column):
+    missing_percentage = df.groupby(groupby_column)[target_column].apply(lambda x:                                                        (x.isnull().sum() / len(x)) * 100).reset_index().set_index(groupby_column)
+    return missing_percentage
+
+def fuse_columns(x, y, column_name):
+    if pd.notna(x) and pd.notna(y):
+        # Both entries are present
+        if x == y:
+            # Entries are the same
+            return x
+        else:
+            # Take the mean of the entries
+            return (x + y) / 2
+    elif pd.notna(x):
+        # x is present, y is missing
+        return x
+    elif pd.notna(y):
+        # y is present, x is missing
+        return y
+    else:
+        # Both entries are missing
+        return pd.NA
+
+def fuse_scores(df, score_col1, score_col2, votes_col1, votes_col2):
+    # Create a new column for fused scores
+    numerator = (df[score_col1].fillna(0) * df[votes_col1].fillna(0) +
+                 df[score_col2].fillna(0) * df[votes_col2].fillna(0))
+    
+    denominator = df[votes_col1].fillna(0) + df[votes_col2].fillna(0)
+
+    # Avoid division by zero
+    df['review'] = numerator / denominator.replace(0, float('nan'))
+
+    # Create a new column for fused votes, including NaN when the sum is zero
+    df['nbr_review'] = df[votes_col1].fillna(0) + df[votes_col2].fillna(0)
+    df['nbr_review'] = df['nbr_review'].replace(0, float('nan'))
+
+    # Drop the unnecessary columns
+    df = df.drop([score_col1, score_col2, votes_col1, votes_col2], axis=1)
+    return df
+    
 def ax_settings(ax, xlabel='', ylabel='', title='', logx=False, logy=False):
     '''Edit ax parameters for plotting'''
     ax.set_xlabel(xlabel)
@@ -152,7 +279,6 @@ def data_missing(df):
     '''Handle missing data'''
     # Drop nan values for date, box-office, genres
     df = df.dropna(subset=['date'])
-    df = df.dropna(subset=['box_office'])
     df = df.dropna(subset=['genres'])
     return df
 
@@ -170,12 +296,14 @@ def data_format(df):
     df['date'] = df['date'].astype(int)
     return df
 
+
+
 def data_clean(df):
     '''Clean data, outliers and features'''
     # Outliers, date before 1800
-    df = df.drop(df.index[df['date']<1800])
+    df = df.drop(df.index[df['year']<1800])
     # Redundant movies
-    ## TODO: mehdi
+    
     return df
 
 def data_filter(df):
@@ -470,7 +598,7 @@ def plot_genres_percentages_per_year(movies, start_year, end_year, start_popular
     
     ax.set_xlabel('Year')
     ax.set_ylabel('Percentage')
-    ax.set_title('Stacked Genre Percentages by Year for Top 20 Genres')
+    ax.set_title('Stacked Genre Percentages by Year for Top 15-30 Genres')
     
     ax.legend(genre_colors.keys(), title="Genres", bbox_to_anchor=(1.05, 1), loc='upper left')
     
