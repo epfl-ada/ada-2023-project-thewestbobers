@@ -196,7 +196,7 @@ def data_viz(df, israw=False):
     '''Movies dataset features distributions'''
 
     # Create subplots
-    fig, axs = plt.subplots(3, 2, figsize=(10,10))
+    fig, axs = plt.subplots(2, 2, figsize=(10,10))
     axs = axs.ravel()
 
     # Movies language distribution: BAR
@@ -239,41 +239,6 @@ def data_viz(df, israw=False):
     axs[3].loglog(ccdf_bo_x, ccdf_bo_y)
     ax_settings(axs[3], xlabel='Box-office [$]', ylabel='CCDF', title='Box-office')
 
-    # Movies genres distribution: BAR
-    if israw:
-        movies_genres = df.dropna(subset=['genres'])['genres']
-        movies_genres = dict_to_list(movies_genres)
-    else:
-        movies_genres = df.genres
-    genres = top_count(movies_genres)
-    axs[4].barh(genres.index, genres.values)
-    ax_settings(axs[4], xlabel='Nb of movies', title='Genres (top 15)', logx=True)
-
-    # Movies runtime distribution: PLOT
-    if israw:
-        movies_run = df.dropna(subset=['runtime'])['runtime']
-    else:
-        movies_run = df.runtime
-    ccdf_t_x, ccdf_t_y = ccdf(movies_run)
-    axs[5].loglog(ccdf_t_x, ccdf_t_y)
-    ax_settings(axs[4], xlabel='Runtime [min]', ylabel='CCDF', title='Runtime')
-
-    plt.suptitle("Distributions of features in Movies dataset", fontsize=16)
-    plt.tight_layout()
-    plt.show()
-
-    # Movies name length
-    fig, axs = plt.subplots(1, 1, figsize=(12,3))
-    if israw:
-        movies_namelen = df.dropna(subset=['name'])['name'].apply(lambda x: len(x))
-    else:
-        movies_namelen = df.name.apply(lambda x: len(x))
-    movies_namelen.hist(bins=100)
-    plt.xlabel('Name lengths')
-    plt.ylabel('Nb of movies')
-    plt.title('Name length')
-    plt.grid(linestyle='--', linewidth=0.5)
-    plt.show()
 
 def data_missing(df):
     '''Handle missing data'''
