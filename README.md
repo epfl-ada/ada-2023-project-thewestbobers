@@ -10,7 +10,7 @@ Research questions we would like to address during the project:
 - Which movies are pivotal in history of cinema?
 - How to detect them?
 - Can we bring context to explain why they are pivotal?
-- In which subsets can we detect pivotal movies, with a trend shape?
+- Which subsets are relevant to detect pivotal movies, with a trend shape?
 
 ## Additional datasets 📈
 [Movielens](https://grouplens.org/datasets/movielens/) contains 45'466 movie including budget, box office and reviews, it will allow us to compute more precise metrics.
