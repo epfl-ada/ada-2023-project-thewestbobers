@@ -6,7 +6,21 @@
  Python Version: 3.11.4
  '''
 
-from implementations import *
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import ast
+import nltk
+import re
+import statsmodels.api as sm
+
+import pyspark.pandas as ps
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+from nltk.stem.snowball import SnowballStemmer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt
@@ -107,3 +121,44 @@ def find_subset(subsets, key):
         if s[0]==key:
             result = i
     return result
+#-------------------------------------------------------------------------------------------------------
+# PAUL
+def tokenize_and_stem(text, stemmer):
+    stemmer = SnowballStemmer("english")
+    tokens = [word for sent in nltk.sent_tokenize(text) for word in nltk.word_tokenize(sent)]
+    filtered_tokens = [token for token in tokens if re.search('[a-zA-Z]', token)]
+    stems = [stemmer.stem(t) for t in filtered_tokens]
+    return stems
+
+def plot_similarity_heatmap(data_frame, text_column):
+    # Merge DataFrame with movie data
+    merged_df = data_frame
+
+    # Initialize SnowballStemmer
+    stemmer = SnowballStemmer("english")
+
+    # Tokenize and stem the text data
+    merged_df['processed_plot'] = merged_df[text_column].apply(lambda x: ' '.join(tokenize_and_stem(x, stemmer)))
+
+    # Create TF-IDF matrix
+    tfidf_vectorizer = TfidfVectorizer(max_df=0.8, max_features=200000, min_df=0.1,
+                                       stop_words='english', use_idf=True, tokenizer=tokenize_and_stem, ngram_range=(1,2))
+    tfidf_matrix = tfidf_vectorizer.fit_transform(merged_df['processed_plot'])
+
+    # Calculate cosine similarity
+    similarity_distance = cosine_similarity(tfidf_matrix)
+
+    # Create a subset of the matrix (e.g., first 100 rows and columns)
+    subset_matrix = similarity_distance[:100, :100]
+
+    # Create a heatmap using Seaborn
+    sns.set(style="white")  # Optional: Set the background style
+    plt.figure(figsize=(10, 8))  # Set the figure size
+    sns.heatmap(subset_matrix, cmap="viridis", annot=False, fmt=".2f", linewidths=.5)
+
+    # Show the plot
+    plt.title('Subset of Similarity Distance Matrix')
+    plt.show()
+
+    return similarity_distance
+#-------------------------------------------------------------------------------------------------------
