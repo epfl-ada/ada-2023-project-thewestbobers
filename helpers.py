@@ -123,8 +123,10 @@ def find_subset(subsets, key):
     return result
 #-------------------------------------------------------------------------------------------------------
 # PAUL
-def tokenize_and_stem(text, stemmer):
-    stemmer = SnowballStemmer("english")
+def tokenize_and_stem(text, stemmer=None):
+    if stemmer is None:
+        stemmer = SnowballStemmer("english")
+    
     tokens = [word for sent in nltk.sent_tokenize(text) for word in nltk.word_tokenize(sent)]
     filtered_tokens = [token for token in tokens if re.search('[a-zA-Z]', token)]
     stems = [stemmer.stem(t) for t in filtered_tokens]
@@ -132,18 +134,18 @@ def tokenize_and_stem(text, stemmer):
 
 def plot_similarity_heatmap(data_frame, text_column):
     # Merge DataFrame with movie data
-    merged_df = data_frame
+    
 
     # Initialize SnowballStemmer
     stemmer = SnowballStemmer("english")
 
     # Tokenize and stem the text data
-    merged_df['processed_plot'] = merged_df[text_column].apply(lambda x: ' '.join(tokenize_and_stem(x, stemmer)))
+    
 
     # Create TF-IDF matrix
     tfidf_vectorizer = TfidfVectorizer(max_df=0.8, max_features=200000, min_df=0.1,
                                        stop_words='english', use_idf=True, tokenizer=tokenize_and_stem, ngram_range=(1,2))
-    tfidf_matrix = tfidf_vectorizer.fit_transform(merged_df['processed_plot'])
+    tfidf_matrix = tfidf_vectorizer.fit_transform(data_frame[text_column])
 
     # Calculate cosine similarity
     similarity_distance = cosine_similarity(tfidf_matrix)
@@ -161,4 +163,5 @@ def plot_similarity_heatmap(data_frame, text_column):
     plt.show()
 
     return similarity_distance
+
 #-------------------------------------------------------------------------------------------------------
