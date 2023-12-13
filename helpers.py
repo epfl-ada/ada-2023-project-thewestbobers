@@ -173,4 +173,49 @@ def calculate_mean_similarity(similarity_matrix, chosen_movie_index, movie_indic
     mean_similarity = np.mean(similarities)
 
     return mean_similarity
+def calculate_mean_similarity(movie_index, merged_df, similarity_matrix, genre):
+    """
+    Calculate the mean similarity of the plot of a given film compared to films of the same genre
+    released 10 years before and 10 years after.
+
+    Parameters:
+    - movie_index (int): Index of the film in the DataFrame.
+    - merged_df (pandas.DataFrame): Merged DataFrame containing movie information.
+    - similarity_matrix (numpy.ndarray): Matrix containing pairwise similarities between movie plots.
+    - genre (str): Genre of the films to compare.
+
+    Returns:
+    - tuple: Mean similarity of the given film's plot to films released 10 years before and after.
+    """
+    # Find the row corresponding to the given film
+    film_row = merged_df.iloc[movie_index]
+
+    # Extract relevant information
+    release_year = film_row['year']
+
+    # Calculate the release year range for 5 years before and 5 years after
+    before_year = release_year - 5
+    after_year = release_year + 5
+
+    # Filter movies of the same genre released 5 years before and after
+    similar_movies_before = merged_df[
+        (merged_df['genres'].apply(lambda genres: genre in genres)) &
+        (merged_df['year'].between(before_year, release_year - 1))
+    ]
+
+    similar_movies_after = merged_df[
+        (merged_df['genres'].apply(lambda genres: genre in genres)) &
+        (merged_df['year'].between(release_year + 1, after_year))
+    ]
+
+    # Get the indices of the movies
+    similar_indices_before = similar_movies_before.index.tolist()
+    similar_indices_after = similar_movies_after.index.tolist()
+
+    # Calculate the mean similarity
+    mean_similarity_before = np.mean(similarity_matrix[movie_index, similar_indices_before])
+    mean_similarity_after = np.mean(similarity_matrix[movie_index, similar_indices_after])
+
+    return mean_similarity_before, mean_similarity_after
+
 #-------------------------------------------------------------------------------------------------------
