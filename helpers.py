@@ -84,7 +84,7 @@ def butter_lowpass_filter(data, cutoff, fs, order):
     return y
 
 def get_peaks(movies, subsets, i):
-    '''Get peaks of a subset'''
+    '''Get peaks of a subset, and their quality'''
     # Preprocess the subset
     subset = subsets[i][1]
     movies_by_year = movies.groupby('year').count()['id_wiki']
@@ -99,8 +99,11 @@ def get_peaks(movies, subsets, i):
     ### let's assume we look for trend that lasted at least 5 years
     ## > height, prominence are thresholds for peak detection
     ### let's set them to the subset overall fraction
-    peaks, _ = find_peaks(x, width=5, height=frac, prominence=frac)
-    return list(distrib.index[peaks])
+    peaks, props = find_peaks(x, width=5, height=frac, prominence=frac)
+    prominences = list(props['prominences'])
+    quality = prominences/x.max()
+    quality = [min(1,q) for q in quality]
+    return list(distrib.index[peaks]), quality
 
 def viz_peaks(movies, subsets, i):
     '''Visualize the peaks or trends of a subset i'''
