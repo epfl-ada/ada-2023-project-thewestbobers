@@ -6,6 +6,8 @@
  Python Version: 3.11.4
  '''
 
+from implementations import *
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,6 +27,21 @@ from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt
 from scipy.signal import find_peaks
+
+import itertools
+
+#-------------------------------------------------------------------------------------------------------
+# ARTHUR
+def select_subsets(movies):
+    '''Return subsets of the 'movies' dataset, by genres
+    don't use genres with too few movies'''
+    min_len = 10
+
+    all_genres = list(set(itertools.chain.from_iterable(movies.genres.tolist())))
+    all_genres.sort()
+    subsets = [(s,create_subset(movies,s)) for s in all_genres]
+    subsets = [element for element in subsets if len(element[1])>min_len]
+    return subsets
 
 def viz_subset(i, subsets, movies):
     '''Visualize a subset i'''
@@ -121,6 +138,14 @@ def find_subset(subsets, key):
         if s[0]==key:
             result = i
     return result
+
+def get_candidates(subsets, key, year):
+    '''Return a dataframe of candidate movies to be pivotal
+    for the peak 'year' of the subset 'key' within 'range_search'.'''
+    range_search = 10
+    subset = subsets[find_subset(subsets, key)][1]
+    return subset[(subset.year<year) & (subset.year>=year-range_search)]
+
 #-------------------------------------------------------------------------------------------------------
 # PAUL
 def tokenize_and_stem(text, stemmer=None):
