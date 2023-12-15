@@ -21,6 +21,7 @@ import statsmodels.api as sm
 import pyspark.pandas as ps
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.window import Window
 from nltk.stem.snowball import SnowballStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -262,3 +263,71 @@ def calculate_mean_similarity(movie_index, merged_df, similarity_matrix, genre):
     return mean_similarity_before, mean_similarity_after
 
 #-------------------------------------------------------------------------------------------------------
+# MEHDI
+
+def clean_gross_income(value):
+    if isinstance(value, str):
+        value = value.replace(',', '').replace('$', '')
+        if 'M' in value:
+            value = float(value.replace('M', '')) * (10**6)
+    return float(value)
+
+
+def check_doublons(df, col_check, year, runtime):
+    for c in col_check:
+        duplicates = df[df.duplicated([c, year, runtime], keep=False)]  
+        if not duplicates.empty:
+            print(f'Rows with real duplicates: ')
+            print(duplicates[[c, year, runtime]])
+            print('-' * 80)
+        else:
+            print(f'No duplicates')
+            print('-' * 80)
+    return None
+
+
+# def fuse_duplicates_spark(df, col_check, year, runtime, col_null, col_rating='ratings', col_weight='votes'):
+#     spark = SparkSession.builder.getOrCreate()
+#     # Handle columns with null values
+#     for col in col_null:
+#         window_spec = Window().partitionBy(col_check, year, runtime)
+        
+#         # Compute the mean of non-null values for each group
+#         mean_col = F.mean(F.col(col).cast("double")).over(window_spec)
+        
+#         # Use coalesce to keep the non-null value if one is null and the other is not
+#         df = df.withColumn(col, F.coalesce(F.col(col), mean_col))
+#     # Calculate weighted average directly
+#     window_spec = Window().partitionBy(col_check, year, runtime)
+#     weighted_avg_ratings = F.sum(F.col(col_rating) * F.col(col_weight)).over(window_spec) / F.sum(col_weight).over(window_spec)
+#     # Apply weighted average to the DataFrame
+#     df = df.withColumn(col_rating, F.when(F.col(col_rating).isNotNull(), F.round(weighted_avg_ratings, 2)).otherwise(F.col(col_rating)))
+#     df = df.withColumn(col_weight, F.sum(col_weight).over(window_spec))
+
+#     # Drop duplicates
+#     df_clean = df.dropDuplicates([col_check, year, runtime])
+
+#     return df_clean
+
+def fuse_duplicates_spark(df, col_check, year, runtime, col_null, col_rating='ratings', col_weight='votes'):
+    spark = SparkSession.builder.getOrCreate()
+    
+    # Handle columns with null values
+    for col in col_null:
+        window_spec = Window().partitionBy(col_check, year, runtime)
+        
+        # Replace null values with the mean
+        df = df.withColumn(col, F.when(F.col(col).isNotNull(), F.col(col)).otherwise(F.mean(F.col(col).cast("double")).over(window_spec))))
+    
+    # Calculate weighted average directly
+    window_spec = Window().partitionBy(col_check, year, runtime)
+    weighted_avg_ratings = F.sum(F.col(col_rating) * F.col(col_weight)).over(window_spec) / F.sum(col_weight).over(window_spec)
+    
+    # Apply weighted average to the DataFrame
+    df = df.withColumn(col_rating, F.when(F.col(col_rating).isNotNull(), F.round(weighted_avg_ratings, 2)).otherwise(F.col(col_rating)))
+    df = df.withColumn(col_weight, F.sum(col_weight).over(window_spec))
+    
+    # Drop duplicates
+    df_clean = df.dropDuplicates([col_check, year, runtime])
+
+    return df_clean
