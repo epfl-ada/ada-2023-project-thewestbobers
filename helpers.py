@@ -8,6 +8,7 @@
 
 from implementations import *
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -121,18 +122,32 @@ def viz_peaks(movies, subsets, i):
     peaks, _ = find_peaks(x, width=5, height=frac, prominence=frac)
 
     # Plot the data
-    plt.figure(figsize=(12, 6))
+    fig, axs = plt.subplots(1,1,figsize=(12, 6))
     plt.plot(distrib.index, distrib, label='Original signal')
     plt.plot(distrib.index, x, label='Smoothed signal')
     plt.plot(distrib.index[peaks], x[peaks], "o", color='k', label='Peaks')
     plt.plot(distrib.index, np.zeros_like(distrib), "--", color="gray")
     plt.plot(distrib.index, np.ones_like(distrib)*frac, "--", color="red", label='Subset overall fraction')
+    for peak in peaks:
+        year = distrib.index[peak]
+        value = x[peak]
+        plt.text(year+5, value, str(year), ha='center', va='bottom', fontsize=15)
     plt.xlabel('Year')
     plt.ylabel('% of the year\'s market')
-    plt.title('Subset : {}'.format(subsets[i][0]))
+    plt.title('Subset : {}'.format(key))
     plt.grid(alpha=0.3, axis='y')
     plt.legend()
     plt.show()
+    return fig
+
+def get_all_viz(movies, subsets):
+    '''Save all figs in a folder'''
+    folder_path = os.path.abspath(os.curdir)
+    for i in range(len(subsets)):
+        fig = viz_peaks(movies, subsets, i)
+        file_name = 'img/viz/'+str(i)+'_'+subsets[i][0].replace('/',' ')+'.png'  # or use .jpg, .pdf, etc.
+        save_path = os.path.join(folder_path, file_name)
+        fig.savefig(save_path, dpi=300)
 
 def find_subset(subsets, key):
     '''Find a peticular subset with its key'''
