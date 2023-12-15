@@ -28,7 +28,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt
-from scipy.signal import find_peaks
 
 import itertools
 
@@ -85,6 +84,57 @@ def butter_lowpass_filter(data, cutoff, fs, order):
     y = filtfilt(b, a, data)
     return y
 
+def find_local_maxima(x):
+    local_maxima = []
+    n = len(x)
+
+    for i in range(n):
+        # Skip first and last elements
+        if 0 < i < n - 1 and x[i] > x[i - 1] and x[i] > x[i + 1]:
+            local_maxima.append(i)
+
+    return local_maxima
+
+def find_inflection_points(x):
+    inflection_points = []
+
+    # First, calculate the first differences (delta_x)
+    delta_x = [x[i+1] - x[i] for i in range(len(x) - 1)]
+
+    # Then, calculate the differences of these deltas (second derivative approximation)
+    delta2_x = [delta_x[i+1] - delta_x[i] for i in range(len(delta_x) - 1)]
+
+    # Now, look for sign changes in delta2_x
+    for i in range(1, len(delta2_x)):
+        if delta2_x[i] * delta2_x[i-1] < 0:  # Sign change
+            inflection_points.append(i)  # Using i here as it represents the original index in x
+
+    return inflection_points
+
+def peak_detection(distrib, frac):
+    '''Detect peak of a signal:
+    - Find local max
+    - Peak should be above overall frac
+    - Peak quality should be above threshold = frac*0.2'''
+
+    # Signal analysis
+    x = butter_lowpass_filter(distrib, cutoff=5, fs=len(distrib), order=3)
+    peaks = find_local_maxima(x)
+    inflexions = find_inflection_points(x)
+
+    # Keep only peaks above overall frac
+    peaks = [p for p in peaks if x[p] > frac]
+    # Quality analysis
+    inflexions = [max([i for i in inflexions if i<p], default=0) for p in peaks]
+    quality = [(x[p]-x[i])/frac for p,i in zip(peaks, inflexions)]
+
+    # # Keep only peaks of quality good enough
+    # tr = 0.2
+    # peaks = [e for i, e in enumerate(peaks) if quality[i] > tr]
+    # inflexions = [e for i, e in enumerate(inflexions) if quality[i] > tr]
+    # quality = [e for i, e in enumerate(quality) if quality[i] > tr]
+    return peaks, quality
+
 def get_peaks(movies, subsets, i):
     '''Get peaks of a subset, and their quality'''
     # Preprocess the subset
@@ -93,18 +143,8 @@ def get_peaks(movies, subsets, i):
     distrib = (subset.groupby('year').count()['id_wiki'] / movies_by_year).fillna(0)
     frac = len(subset)/len(movies)
 
-    # Low pass filter
-    x = butter_lowpass_filter(distrib, cutoff=5, fs=len(distrib), order=3)
-
-    # Find peaks
-    ## > width is the min size of the trend
-    ### let's assume we look for trend that lasted at least 5 years
-    ## > height, prominence are thresholds for peak detection
-    ### let's set them to the subset overall fraction
-    peaks, props = find_peaks(x, width=5, height=frac, prominence=frac)
-    prominences = list(props['prominences'])
-    quality = prominences/x.max()
-    quality = [min(1,q) for q in quality]
+    # Find peaks and quality
+    peaks, quality = peak_detection(distrib, frac)
     return list(distrib.index[peaks]), quality
 
 def viz_peaks(movies, subsets, i):
@@ -113,14 +153,13 @@ def viz_peaks(movies, subsets, i):
     subset = subsets[i][1]
     movies_by_year = movies.groupby('year').count()['id_wiki']
     distrib = (subset.groupby('year').count()['id_wiki'] / movies_by_year).fillna(0)
-    frac = len(subsets[i][1])/len(movies)
+    frac = len(subset)/len(movies)
 
     # Low pass filter
     x = butter_lowpass_filter(distrib, cutoff=5, fs=len(distrib), order=3)
 
-    # Find peaks
-    ## try wlen for "Window length for calculating the prominence"
-    peaks, _ = find_peaks(x, width=5, height=frac, prominence=frac)
+    # Find peaks and quality
+    peaks, quality = peak_detection(distrib, frac)
 
     # Plot the data
     fig, axs = plt.subplots(1,1,figsize=(12, 6))
@@ -129,10 +168,15 @@ def viz_peaks(movies, subsets, i):
     plt.plot(distrib.index[peaks], x[peaks], "o", color='k', label='Peaks')
     plt.plot(distrib.index, np.zeros_like(distrib), "--", color="gray")
     plt.plot(distrib.index, np.ones_like(distrib)*frac, "--", color="red", label='Subset overall fraction')
-    for peak in peaks:
-        year = distrib.index[peak]
-        value = x[peak]
-        plt.text(year+5, value, str(year), ha='center', va='bottom', fontsize=15)
+    for p, q in zip(peaks, quality):
+        year = distrib.index[p]
+        value = x[p]
+        tr = 0.2
+        c = 'red' if q < tr else 'k'
+        y_offset = 0.05 * (plt.ylim()[1] - plt.ylim()[0])
+        plt.text(year+5, value, str(year), ha='center', va='bottom', fontsize=15, color=c)
+        plt.text(year+5, value+y_offset, 'Q:'+str(round(q,3)), ha='center', va='bottom', fontsize=12, color=c)
+        plt.text(distrib.index[0], frac+y_offset/2, 'overall fraction: '+str(round(frac,3)), ha='left', va='bottom', fontsize=8, color='red', alpha=0.5)
     plt.xlabel('Year')
     plt.ylabel('% of the year\'s market')
     plt.title('Subset : {}'.format(key))
@@ -157,6 +201,9 @@ def find_subset(subsets, key):
         if s[0]==key:
             result = i
     return result
+
+def get_trends(movies, subsets, threshold):
+    return [(s[0], [p for p,q in zip(*get_peaks(movies, subsets, i)) if q>threshold]) for i, s in enumerate(subsets)]
 
 def get_candidates(subsets, key, year):
     '''Return a dataframe of candidate movies to be pivotal
@@ -317,7 +364,7 @@ def fuse_duplicates_spark(df, col_check, year, runtime, col_null, col_rating='ra
         window_spec = Window().partitionBy(col_check, year, runtime)
         
         # Replace null values with the mean
-        df = df.withColumn(col, F.when(F.col(col).isNotNull(), F.col(col)).otherwise(F.mean(F.col(col).cast("double")).over(window_spec))))
+        df = df.withColumn(col, F.when(F.col(col).isNotNull(), F.col(col)).otherwise(F.mean(F.col(col).cast("double")).over(window_spec)))
     
     # Calculate weighted average directly
     window_spec = Window().partitionBy(col_check, year, runtime)

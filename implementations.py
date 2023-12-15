@@ -277,6 +277,8 @@ def data_filter(df):
     df = df[df.countries.apply(lambda x: 'USA' in x)]
     # Keep only english movies
     df = df[df.lang.apply(lambda x: 'English Language' in x)]
+    # Keep only movies from 1910 to 2010
+    df = df[(df.year>=1910) & (df.year<=2010)]
     return df
 
 def create_subset(df, key):
