@@ -205,12 +205,35 @@ def find_subset(subsets, key):
 def get_trends(movies, subsets, threshold):
     return [(s[0], [p for p,q in zip(*get_peaks(movies, subsets, i)) if q>threshold]) for i, s in enumerate(subsets)]
 
-def get_candidates(subsets, key, year):
-    '''Return a dataframe of candidate movies to be pivotal
-    for the peak 'year' of the subset 'key' within 'range_search'.'''
-    range_search = 10
+def range_search(subsets, key, year, range_search):
+    '''Return a dataframe of a movies subset within a range, before a date'''
     subset = subsets[find_subset(subsets, key)][1]
-    return subset[(subset.year<year) & (subset.year>=year-range_search)]
+    range_results = subset[(subset.year<year) & (subset.year>=year-range_search)]
+    return range_results
+
+def get_candidates(subsets, trends):
+    '''Return all candidates movies to be pivotal, for each subset
+    Output format: array of ('name', year, DF)'''
+    candidates = [(trend[0], peak, range_search(subsets, trend[0], peak, 10)) for trend in trends
+                                                                              for peak in trend[1]]
+    return candidates
+
+def find_candidates(candidates, key, year=None):
+    result = []
+    for i, c in enumerate(candidates):
+        if c[0]==key:
+            if year==None:
+                result.append(i)
+            elif year=='first':
+                return i
+            elif c[1]==year:
+                return i
+    return result
+
+def show_candidates(candidates, i):
+    '''Display candidates for trend i'''
+    print('Candidates of pivotal of genre {}, for trend in {}'.format(candidates[i][0],candidates[i][1]))
+    return candidates[i][2]
 
 #-------------------------------------------------------------------------------------------------------
 # PAUL
