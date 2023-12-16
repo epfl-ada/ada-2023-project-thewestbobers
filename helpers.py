@@ -401,3 +401,120 @@ def fuse_duplicates_spark(df, col_check, year, runtime, col_null, col_rating='ra
     df_clean = df.dropDuplicates([col_check, year, runtime])
 
     return df_clean
+
+#-------------------------------------------------------------------------------------------------------
+# MANU
+
+def check_years(df):
+    """
+    Check whether the column 'year' in the dataframe is containing any holes (years within the yearspan of the whole set, for which there exists no data). 
+
+    Parameters:
+    - df (pandas.DataFrame): dataframe with at least one column 'years'.
+
+    Returns:
+    - no_data_years (list): List of years, for which no data is existing in the dataframe.
+    """
+    # create list of all years in yearspan of dataframe
+    start_year = df.year.min()
+    end_year = df.year.max ()
+    years = np.arange(start_year, end_year + 1)
+    # check whether there exists data for each year
+    data_years = df['year'].unique().tolist()
+    # create list with the years that have no data
+    no_data_years = years[~np.isin(years, data_years)].tolist()
+
+    return no_data_years, start_year, end_year
+
+def revenue_inflation_correction(df, df_inflation):
+    """
+    Corrects 'revenue' in df by inflation rate described in df_inflation. 
+    
+    Parameters:
+    - df (pandas.DataFrame): dataframe with at least the columns 'year' and 'revenue'. 
+    - df_inflation (pandas.DataFrame): dataframe with at least the columns 'year' and 'amount'. Relates the value of money to a reference year (1800). 
+
+    Returns:
+    - df_out (pandas.DataFrame): dataframe df with additional column 'revenue_infl', which is the revenue but corrected to account for inflation.
+    """
+    # preparing the dataset
+    no_data_years, start_year, end_year = check_years(df)
+    df_inflation_prep = df_inflation[(df_inflation['year'] >= start_year) & (df_inflation['year'] <= end_year) & (~df_inflation['year'].isin(no_data_years))][['year','amount']]
+    # merge data on 'year'
+    df_out = pd.merge(df, df_inflation_prep, on='year', how='left')
+    # divide 'revenue' by 'amount' to get 'revenue_infl' in US$1800
+    df_out['revenue_infl'] = df_out['revenue'] / df_out['amount']
+    # drop 'amount' and 'revenue' columns
+    df_out = df_out.drop(columns=['amount'])
+    display(df_out.sample(5))
+
+    ## visualistaion
+    # calculate the yearly total of revenues
+    revenue_year_infl = df_out.groupby(['year']).revenue_infl.sum()
+    revenue_year_orig = df_out.groupby(['year']).revenue.sum()
+    years_in_df = df_out['year'].unique().tolist()
+    years_in_df.sort()
+    # Plot the adjusted and original yearly total revenues
+    plt.semilogy(years_in_df, revenue_year_infl, label='Inflation Adjusted Revenue')
+    plt.semilogy(years_in_df, revenue_year_orig, label='Original Revenue')
+    plt.title('Revenue Over the Years')
+    plt.xlabel('Year')
+    plt.ylabel('Revenue [US$]')
+    plt.legend()
+    plt.show()
+
+    return df_out
+
+def revenue_normalisation(df):
+    """
+    Normalizes 'revenue_infl' in df via a regression analysis. 
+    
+    Parameters:
+    - df (pandas.DataFrame): dataframe with at least the columns 'year', 'revenue' and 'revenue_infl'. 
+    
+    Returns:
+    - df_out (pandas.DataFrame): dataframe df with additional column 'revenue_norm', which is the revenue but corrected to account for inflation.
+    """
+    # define predictor and dependent variables
+    X = df['year'].unique().tolist()
+    X.sort()
+    revenue_year_infl = df.groupby(['year']).revenue_infl.sum()
+    y = revenue_year_infl.astype(float)
+    y = np.asarray(y)
+    X = np.asarray(X)
+    # Create a statsmodels regression model
+    model = sm.OLS(y, X).fit()
+    # Print the regression results
+    print(model.summary())
+    # Predict the revenue using the model
+    y_pred = model.predict(X)
+    # normalize the data of each year
+    revenue_normalized = revenue_year_infl - (y_pred - y_pred[0]*np.ones(y_pred.size))
+
+    # prepare for merging
+    revenue_normalized = revenue_normalized.reset_index()
+    revenue_normalized.rename(columns={"year": "year", "revenue_infl": "revenue_norm_tot"}, inplace=True)
+    revenue_normalized
+    # merge data on 'year'
+    df_out = pd.merge(df, revenue_normalized, on='year', how='left')
+    # calculate revenue for each movie
+    df_out['revenue_norm'] = df_out['revenue_part'] * df_out['revenue_norm_tot']
+    # drop 'revenue_norm_tot' and 'revenue_infl' columns
+    df_out = df_out.drop(columns=['revenue_norm_tot']) # optionally drop 'revenue_infl' and 'revenue' too
+    display(df_out.sample(5))
+
+    ## visualisation
+    # check normalization
+    revenue_year_norm = df_out.groupby(['year']).revenue_norm.sum()
+    revenue_year_orig = df.groupby(['year']).revenue.sum()
+    # Plot the original, inflation corrected and normalized data points
+    plt.semilogy(X, revenue_year_orig, label='Original Data')
+    plt.semilogy(X, revenue_year_infl, label='Inflation corrected Data')
+    plt.semilogy(X, revenue_year_norm, label='Normalized Data')
+    plt.title('Revenue Over the Years')
+    plt.xlabel('Year')
+    plt.ylabel('Revenue [US$]')
+    plt.legend()
+    plt.show()
+
+    return df_out
