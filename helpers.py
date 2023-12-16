@@ -356,51 +356,223 @@ def check_doublons(df, col_check, year, runtime):
     return None
 
 
-# def fuse_duplicates_spark(df, col_check, year, runtime, col_null, col_rating='ratings', col_weight='votes'):
-#     spark = SparkSession.builder.getOrCreate()
-#     # Handle columns with null values
-#     for col in col_null:
-#         window_spec = Window().partitionBy(col_check, year, runtime)
+def fuse_duplicates_imdb(imdb_df):
+    # Group by 'name', 'year', and 'duration'
+    grouped = imdb_df.groupby(['name', 'year', 'duration'])
+
+    # Define a custom aggregation function to handle NaN values
+    def custom_aggregate(series):
+        non_nan_values = series.dropna()
+        if non_nan_values.empty:
+            return None
+        return non_nan_values.mean()
+
+    # Apply the custom aggregation function to 'gross_income'
+    aggregated_gross_income = grouped['gross_income'].agg(custom_aggregate)
+
+    # Merge the aggregated values back to the original DataFrame
+    merged_df = imdb_df.merge(aggregated_gross_income.reset_index(), on=['name', 'year', 'duration'], how='left', suffixes=('', '_mean'))
+
+    # Fill NaN values in 'gross_income' with the mean values
+    merged_df['gross_income'] = merged_df['gross_income'].combine_first(merged_df['gross_income_mean'])
+
+    # Drop unnecessary columns
+    merged_df = merged_df.drop(columns=['gross_income_mean'])
+
+    return merged_df
+
+def calculate_weighted_average(df, col_check, col_rating, col_weight):
+    # Define a custom aggregation function for weighted average of 'rating'
+    def custom_weighted_average(df):
+        weights = df[col_weight]
+        values = df[col_rating]
+        weighted_average = (weights * values).sum() / weights.sum() if weights.sum() != 0 else None
+        return pd.Series({'weighted_avg_rating': weighted_average, 'sum_votes': df['votes'].sum()})
+
+    # Apply the custom aggregation function to 'rating' and 'votes'
+    weighted_avg_ratings = df.groupby([col_check, 'year', 'duration']).apply(custom_weighted_average)
+
+    # Merge the aggregated values back to the original DataFrame
+    df = df.merge(weighted_avg_ratings.reset_index(), on=[col_check, 'year', 'duration'], how='left')
+
+    # Fill NaN values in 'rating' with the weighted average values
+    df[col_rating] = df['weighted_avg_rating'].combine_first(df[col_rating])
+
+    # Fill NaN values in 'votes' with the sum of votes
+    df['votes'] = df['sum_votes']
+
+    # Drop unnecessary columns
+    df = df.drop(columns=['weighted_avg_rating', 'sum_votes'])
+
+    # Round the 'rating' column to one decimal place
+    df[col_rating] = df[col_rating].round(1)
+
+    # Drop one duplicate per pair
+    df = df.drop_duplicates(subset=[col_check, 'year', 'duration'])
+
+    return df
+
+
+def drop_duplicates(df, col_check):
+    """
+    Drop duplicates in a DataFrame based on a list of columns.
+
+    Parameters:
+    - df: DataFrame
+    - columns: List of columns to consider for duplicate checking
+
+    Returns:
+    - DataFrame with duplicates dropped
+    """
+    # Check for duplicates based on the specified columns
+    duplicates_mask = df.duplicated(subset=col_check, keep='first')
+
+    # Drop one element of each duplicate pair
+    df_cleaned = df[~duplicates_mask]
+
+    return df_cleaned
+
+
+def fuse_columns_v2(x, y):
+    if pd.notna(x) and pd.notna(y):
+        # Both entries are present
+        if x == y:
+            # Entries are the same
+            return x
+        else:
+            # Take the mean of the entries
+            return (x + y) / 2
+    elif pd.notna(x):
+        # x is present, y is missing
+        return x
+    elif pd.notna(y):
+        # y is present, x is missing
+        return y
+    else:
+        # Both entries are missing
+        return pd.NA
+    
+
+def fuse_scores_v2(df, score_col1, score_col2, votes_col1, votes_col2, score_col, votes_col):
+    # Create a new column for fused scores
+    numerator = (df[score_col1].fillna(0) * df[votes_col1].fillna(0) +
+                 df[score_col2].fillna(0) * df[votes_col2].fillna(0))
+    
+    denominator = df[votes_col1].fillna(0) + df[votes_col2].fillna(0)
+
+    # Avoid division by zero
+    df[score_col] = numerator / denominator.replace(0, float('nan'))
+    df[score_col] = df[score_col].round(2)
+
+    # Create a new column for fused votes, including NaN when the sum is zero
+    df[votes_col] = df[votes_col1].fillna(0) + df[votes_col2].fillna(0)
+    df[votes_col] = df[votes_col].replace(0, float('nan'))
+
+    # Drop the unnecessary columns
+    df = df.drop([score_col1, score_col2, votes_col1, votes_col2], axis=1)
+    return df
+
+
+def fuse_duplicates_v2(df, col_check, year, runtime, col_null, col_score, col_weight):
+    df_clean = df.copy(deep=True)
+    df_clean[runtime] = df_clean[runtime].fillna(-1)
+    for c in col_check:
+        duplicates = df_clean[df_clean.duplicated([c, year, runtime], keep=False)]  
+        if not duplicates.empty:
+            print(f'Fusing duplicates: ')
+
+            for index, group in duplicates.groupby([c, year, runtime]):
+                if len(group) > 1:
+                    higher_index = group.index.max()
+                    lower_index = group.index.min()
+                    # Fuse 'release_month', 'box_office_revenue', 'runtime'
+                    for col in col_null:
+                        if pd.isnull(group.loc[lower_index, col]) and not pd.isnull(group.loc[higher_index, col]):
+                            df_clean.at[lower_index, col] = group.loc[higher_index, col]
+                        elif not pd.isnull(group.loc[lower_index, col]) and not pd.isnull(group.loc[higher_index, col]):
+                            if group.loc[lower_index, col] != group.loc[higher_index, col]:
+                                # Calculate mean if values are different
+                                mean_value = group.loc[:, col].mean()
+                                df_clean.at[lower_index, col] = mean_value
+                    
+                    # Calculate weighted average for col_score
+                    weighted_average = (group.loc[lower_index, col_score] * group.loc[lower_index, col_weight] +
+                                        group.loc[higher_index, col_score] * group.loc[higher_index, col_weight]) / \
+                                        (group.loc[lower_index, col_weight] + group.loc[higher_index, col_weight])
+
+                    # Update col_score with the weighted average
+                    df_clean.at[lower_index, col_score] = round(weighted_average, 1)
+
+                    # Update col_weight with the sum of weights
+                    df_clean.at[lower_index, col_weight] = group.loc[lower_index, col_weight] + group.loc[higher_index, col_weight]
+
+                    df_clean = df_clean.drop(higher_index)
+
+            print('Duplicates fused successfully.')
+            print('-' * 80)
+        else:
+            print(f'No duplicates')
+            print('-' * 80)
+    
+    df_clean[runtime] = df_clean[runtime].replace(-1, pd.NA)
+    return df_clean.reset_index(drop=True)
+
+
+def fuse_scores_stats(df, score_col1, score_col2, votes_col1, votes_col2):
+    # Filter rows where score_col2 is NaN
+    nan_rows = df[pd.isna(df[score_col2])]
+
+    if not nan_rows.empty:
+        # Create a new column for fused scores
+        numerator = (nan_rows[score_col1].fillna(0) * nan_rows[votes_col1].fillna(0) +
+                     nan_rows[score_col2].fillna(0) * nan_rows[votes_col2].fillna(0))
         
-#         # Compute the mean of non-null values for each group
-#         mean_col = F.mean(F.col(col).cast("double")).over(window_spec)
-        
-#         # Use coalesce to keep the non-null value if one is null and the other is not
-#         df = df.withColumn(col, F.coalesce(F.col(col), mean_col))
-#     # Calculate weighted average directly
-#     window_spec = Window().partitionBy(col_check, year, runtime)
-#     weighted_avg_ratings = F.sum(F.col(col_rating) * F.col(col_weight)).over(window_spec) / F.sum(col_weight).over(window_spec)
-#     # Apply weighted average to the DataFrame
-#     df = df.withColumn(col_rating, F.when(F.col(col_rating).isNotNull(), F.round(weighted_avg_ratings, 2)).otherwise(F.col(col_rating)))
-#     df = df.withColumn(col_weight, F.sum(col_weight).over(window_spec))
+        denominator = nan_rows[votes_col1].fillna(0) + nan_rows[votes_col2].fillna(0)
 
-#     # Drop duplicates
-#     df_clean = df.dropDuplicates([col_check, year, runtime])
+        # Put fused ratings in score_col2, avoid division by zero
+        nan_rows.loc[:, score_col2] = numerator / denominator.replace(0, float('nan'))
 
-#     return df_clean
+        # Put fused votes in votes_col2, including NaN when the sum is zero
+        nan_rows.loc[:, votes_col2] = nan_rows[votes_col1].fillna(0) + nan_rows[votes_col2].fillna(0)
+        nan_rows.loc[:, votes_col2] = nan_rows[votes_col2].replace(0, float('nan'))
 
-def fuse_duplicates_spark(df, col_check, year, runtime, col_null, col_rating='ratings', col_weight='votes'):
-    spark = SparkSession.builder.getOrCreate()
-    
-    # Handle columns with null values
-    for col in col_null:
-        window_spec = Window().partitionBy(col_check, year, runtime)
-        
-        # Replace null values with the mean
-        df = df.withColumn(col, F.when(F.col(col).isNotNull(), F.col(col)).otherwise(F.mean(F.col(col).cast("double")).over(window_spec)))
-    
-    # Calculate weighted average directly
-    window_spec = Window().partitionBy(col_check, year, runtime)
-    weighted_avg_ratings = F.sum(F.col(col_rating) * F.col(col_weight)).over(window_spec) / F.sum(col_weight).over(window_spec)
-    
-    # Apply weighted average to the DataFrame
-    df = df.withColumn(col_rating, F.when(F.col(col_rating).isNotNull(), F.round(weighted_avg_ratings, 2)).otherwise(F.col(col_rating)))
-    df = df.withColumn(col_weight, F.sum(col_weight).over(window_spec))
-    
-    # Drop duplicates
-    df_clean = df.dropDuplicates([col_check, year, runtime])
+        # Update the original DataFrame with the modified rows
+        df.loc[nan_rows.index] = nan_rows
 
-    return df_clean
+    return df
+
+
+def fuse_winner_columns(df, winner_x_col, winner_y_col):
+    """
+    Fuse the 'winner_x' and 'winner_y' columns into a single 'winner' column,
+    prioritizing non-null values. Drop the original 'winner_x' and 'winner_y' columns.
+
+    Parameters:
+    - df: DataFrame, the input DataFrame
+    - winner_x_col: str, the column name for 'winner_x'
+    - winner_y_col: str, the column name for 'winner_y'
+
+    Returns:
+    - DataFrame, the modified DataFrame with a single 'winner' column
+    """
+    df['winner'] = np.where(
+        df[winner_x_col].notnull() & df[winner_y_col].notnull(),
+        df[winner_x_col],
+        np.where(
+            df[winner_x_col].notnull(),
+            df[winner_x_col],
+            np.where(
+                df[winner_y_col].notnull(),
+                df[winner_y_col],
+                np.nan
+            )
+        )
+    )
+    
+    # Drop 'winner_x' and 'winner_y' columns
+    df = df.drop([winner_x_col, winner_y_col], axis=1)
+    
+    return df
 
 #-------------------------------------------------------------------------------------------------------
 # MANU
