@@ -287,7 +287,9 @@ def calculate_mean_similarity_1(similarity_matrix, chosen_movie_index, movie_ind
     mean_similarity = np.mean(similarities)
 
     return mean_similarity
-def calculate_mean_similarity(movie_index, merged_df, similarity_matrix, genre):
+import numpy as np
+
+def calculate_mean_similarity_2(movie_index, merged_df, similarity_matrix, genre):
     """
     Calculate the mean similarity of the plot of a given film compared to films of the same genre
     released 10 years before and 10 years after.
@@ -331,6 +333,62 @@ def calculate_mean_similarity(movie_index, merged_df, similarity_matrix, genre):
     mean_similarity_after = np.mean(similarity_matrix[movie_index, similar_indices_after])
 
     return mean_similarity_before, mean_similarity_after
+
+
+def calculate_mean_similarity(df_candidates, merged_df, similarity_matrix, genre):
+    """
+    Calculate the mean similarity of the plot of a given film compared to films of the same genre
+    released 10 years before and 10 years after.
+
+    Parameters:
+    - df_candidates (pandas.DataFrame): DataFrame containing movie candidates and their information.
+    - merged_df (pandas.DataFrame): Merged DataFrame containing movie information.
+    - similarity_matrix (numpy.ndarray): Matrix containing pairwise similarities between movie plots.
+    - genre (str): Genre of the films to compare.
+
+    Returns:
+    - pandas.DataFrame: Updated DataFrame (df_candidates) with a new column for delta_similarity.
+    """
+    delta_similarity_list = []
+    for id_wiki, release_year in zip(df_candidates['id_wiki'], df_candidates['year']):
+        # Calculate the release year range for 5 years before and 5 years after
+        before_year = release_year - 10
+        after_year = release_year + 10
+
+        # Filter movies of the same genre released 5 years before and after
+        similar_movies_before = merged_df[
+            (merged_df['genres'].apply(lambda genres: genre in genres)) &
+            (merged_df['year'].between(before_year, release_year - 1))
+        ]
+
+        similar_movies_after = merged_df[
+            (merged_df['genres'].apply(lambda genres: genre in genres)) &
+            (merged_df['year'].between(release_year + 1, after_year))
+        ]
+
+        # Get the indices of the movies
+        similar_indices_before = similar_movies_before.index.tolist()
+        similar_indices_after = similar_movies_after.index.tolist()
+
+        # Check if the DataFrame is not empty before accessing the index
+        if not merged_df[merged_df['id_wiki'] == id_wiki].empty:
+            index_sim_mat = merged_df[merged_df['id_wiki'] == id_wiki].index.values[0]
+
+            # Calculate the mean similarity
+            mean_similarity_before = np.mean(similarity_matrix[index_sim_mat, similar_indices_before])
+            mean_similarity_after = np.mean(similarity_matrix[index_sim_mat, similar_indices_after])
+
+            # Append the mean_similarity_after value to the list
+            delta_similarity_list.append((mean_similarity_after - mean_similarity_before)*100)
+        else:
+            # Handle the case when no match is found for the id_wiki
+            delta_similarity_list.append(np.nan)
+
+    # Add a new column 'delta_similarity' to df_candidates
+    df_candidates['delta_similarity'] = delta_similarity_list
+
+    return df_candidates
+
 
 #-------------------------------------------------------------------------------------------------------
 # MEHDI
