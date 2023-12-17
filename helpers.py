@@ -278,7 +278,7 @@ def plot_similarity_heatmap(data_frame, text_column):
 
     return similarity_distance
 
-def calculate_mean_similarity(similarity_matrix, chosen_movie_index, movie_indices):
+def calculate_mean_similarity_1(similarity_matrix, chosen_movie_index, movie_indices):
    
     # Extract similarity values for the chosen movie and the set of movies
     similarities = similarity_matrix[chosen_movie_index, movie_indices]
