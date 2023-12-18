@@ -127,13 +127,8 @@ def peak_detection(distrib, frac):
     # Quality analysis
     inflexions = [max([i for i in inflexions if i<p], default=0) for p in peaks]
     quality = [(x[p]-x[i])/frac for p,i in zip(peaks, inflexions)]
-
-    # # Keep only peaks of quality good enough
-    # tr = 0.2
-    # peaks = [e for i, e in enumerate(peaks) if quality[i] > tr]
-    # inflexions = [e for i, e in enumerate(inflexions) if quality[i] > tr]
-    # quality = [e for i, e in enumerate(quality) if quality[i] > tr]
-    return peaks, quality
+    
+    return peaks, inflexions, quality
 
 def get_peaks(movies, subsets, i):
     '''Get peaks of a subset, and their quality'''
@@ -144,10 +139,10 @@ def get_peaks(movies, subsets, i):
     frac = len(subset)/len(movies)
 
     # Find peaks and quality
-    peaks, quality = peak_detection(distrib, frac)
-    return list(distrib.index[peaks]), quality
+    peaks, inflexions, quality = peak_detection(distrib, frac)
+    return list(distrib.index[peaks]), list(distrib.index[inflexions]), quality
 
-def viz_peaks(movies, subsets, i):
+def viz_peaks(movies, subsets, i, search=None):
     '''Visualize the peaks or trends of a subset i'''
     key = subsets[i][0]
     subset = subsets[i][1]
@@ -159,15 +154,18 @@ def viz_peaks(movies, subsets, i):
     x = butter_lowpass_filter(distrib, cutoff=5, fs=len(distrib), order=3)
 
     # Find peaks and quality
-    peaks, quality = peak_detection(distrib, frac)
+    peaks, inflexions, quality = peak_detection(distrib, frac)
 
     # Plot the data
     fig, axs = plt.subplots(1,1,figsize=(12, 6))
-    plt.plot(distrib.index, distrib, label='Original signal')
-    plt.plot(distrib.index, x, label='Smoothed signal')
+    plt.plot(distrib.index, distrib, label='Original distribution')
+    plt.plot(distrib.index, x, label='Smoothed distribution')
     plt.plot(distrib.index[peaks], x[peaks], "o", color='k', label='Peaks')
+    plt.plot(distrib.index[inflexions], x[inflexions], "+", color='k', label='Inflexions')
     plt.plot(distrib.index, np.zeros_like(distrib), "--", color="gray")
     plt.plot(distrib.index, np.ones_like(distrib)*frac, "--", color="red", label='Subset overall fraction')
+    y_offset = 0.05 * (plt.ylim()[1] - plt.ylim()[0])
+    plt.text(distrib.index[0], frac+y_offset/2, 'historic fraction: '+str(round(frac,3)), ha='left', va='bottom', fontsize=8, color='red', alpha=0.5)
     for p, q in zip(peaks, quality):
         year = distrib.index[p]
         value = x[p]
@@ -176,9 +174,17 @@ def viz_peaks(movies, subsets, i):
         y_offset = 0.05 * (plt.ylim()[1] - plt.ylim()[0])
         plt.text(year+5, value, str(year), ha='center', va='bottom', fontsize=15, color=c)
         plt.text(year+5, value+y_offset, 'Q:'+str(round(q,3)), ha='center', va='bottom', fontsize=12, color=c)
-        plt.text(distrib.index[0], frac+y_offset/2, 'overall fraction: '+str(round(frac,3)), ha='left', va='bottom', fontsize=8, color='red', alpha=0.5)
+    for i, q in zip(inflexions, quality):
+        year = distrib.index[i]
+        value = x[i]
+        tr = 0.2
+        c = 'red' if q < tr else 'k'
+        y_offset = 0.05 * (plt.ylim()[1] - plt.ylim()[0])
+        plt.text(year+3, value-y_offset, str(year), ha='center', va='bottom', fontsize=12, color=c)
+    if search != None:
+        plt.axvspan(max(1910,2*search[1]-search[0]), min(2010,search[1]), color='green', alpha=0.2)
     plt.xlabel('Year')
-    plt.ylabel('% of the year\'s market')
+    plt.ylabel('Fraction of the genre by year [%]')
     plt.title('Subset : {}'.format(key))
     plt.grid(alpha=0.3, axis='y')
     plt.legend()
@@ -203,7 +209,11 @@ def find_subset(subsets, key):
     return result
 
 def get_trends(movies, subsets, threshold):
-    return [(s[0], [p for p,q in zip(*get_peaks(movies, subsets, i)) if q>threshold]) for i, s in enumerate(subsets)]
+    '''Returns a list of tuples of this format : ('genre_name', [peak_years], [inflexion_years])
+    for all combination of Genre and Peak'''
+    return [(s[0],
+             [p for p,inflex,q in zip(*get_peaks(movies, subsets, i)) if q>threshold],
+             [inflex for p,inflex,q in zip(*get_peaks(movies, subsets, i)) if q>threshold]) for i, s in enumerate(subsets)]
 
 def range_search(subsets, key, year, range_search):
     '''Return a dataframe of a movies subset within a range, before a date'''
@@ -213,27 +223,37 @@ def range_search(subsets, key, year, range_search):
 
 def get_candidates(subsets, trends):
     '''Return all candidates movies to be pivotal, for each subset
-    Output format: array of ('name', year, DF)'''
-    candidates = [(trend[0], peak, range_search(subsets, trend[0], peak, 10)) for trend in trends
-                                                                              for peak in trend[1]]
+    in a range of years before the inflexion year: the difference between the peak and the inflexion
+    Output format: array of ('genre_name', peak_year, inflexion_year, DF)'''
+    candidates = [(trend[0], peak, inflex, range_search(subsets, trend[0], inflex, peak-inflex)) for trend in trends
+                                                                                  for peak, inflex in zip(trend[1], trend[2])]
     return candidates
 
-def find_candidates(candidates, key, year=None):
+def find_candidates(candidates, key, peak=None):
+    '''Search candidates for the trend corresponding to parameters
+    Input:
+        candidates: list of candidates
+        key: candidates corresponding to a genre name
+        year: candidates of a genre corresponding to a peak year'''
     result = []
     for i, c in enumerate(candidates):
         if c[0]==key:
-            if year==None:
+            if peak==None:
                 result.append(i)
-            elif year=='first':
+            elif peak=='first':
                 return i
-            elif c[1]==year:
+            elif c[1]==peak:
                 return i
     return result
 
-def show_candidates(candidates, i):
+def show_candidates(movies, subsets, candidates, key, peak='first'):
     '''Display candidates for trend i'''
-    print('Candidates of pivotal of genre {}, for trend in {}'.format(candidates[i][0],candidates[i][1]))
-    return candidates[i][2]
+    i = find_candidates(candidates,key,peak=peak)
+    fig = viz_peaks(movies, subsets, find_subset(subsets, key), search=candidates[i][1:3])
+    print('Candidates of pivotal of genre {}, for trend peak in {} and trend inflexion in {}'
+          .format(candidates[i][0],candidates[i][1],candidates[i][2]))
+    c = candidates[i][3].sort_values('year')
+    return c
 
 #-------------------------------------------------------------------------------------------------------
 # PAUL
