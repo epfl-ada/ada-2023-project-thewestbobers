@@ -428,11 +428,9 @@ def check_doublons(df, col_check, year, runtime):
         if not duplicates.empty:
             print(f'Rows with real duplicates: ')
             print(duplicates[[c, year, runtime]])
-            print('-' * 80)
         else:
             print(f'No duplicates')
-            print('-' * 80)
-    return None
+    return '-'*80
 
 
 def fuse_duplicates_imdb(imdb_df):
