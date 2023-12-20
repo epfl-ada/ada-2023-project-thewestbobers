@@ -501,7 +501,7 @@ def process_candidates(candidates, min_elements,movies_features,merged_df,simila
     
     
 
-def filter_candidates(df, min_movies_per_trend=3):
+def filter_candidates(df, min_movies_per_trend=2):
     # Copy the input DataFrame to avoid modifying the original data
     result_df_copy = df.copy()
     
