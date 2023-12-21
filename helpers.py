@@ -17,20 +17,22 @@ import ast
 import nltk
 import re
 import statsmodels.api as sm
+import string
 
 import pyspark.pandas as ps
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 from nltk.stem.snowball import SnowballStemmer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
-
+from matplotlib.colors import LogNorm
 
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt
-
 import itertools
 
 #-------------------------------------------------------------------------------------------------------
@@ -382,7 +384,26 @@ def get_all_viz_pivotal(movies, subsets, pivotals_list, pivotals_of_genres):
 
 #-------------------------------------------------------------------------------------------------------
 # PAUL
-def tokenize_and_stem(text, stemmer=None):
+def remove_stopwords_and_punctuation(text):
+    # Tokenize the text into words
+    words = word_tokenize(text)
+
+    # Remove stopwords and punctuation
+    stop_words = set(stopwords.words('english'))
+    punctuation = set(string.punctuation)
+    filtered_words = [word.lower() for word in words if word.lower() not in stop_words and word.lower() not in punctuation]
+
+    return filtered_words
+
+
+def apply_stemming(words):
+    # Apply stemming using PorterStemmer
+    stemmer = SnowballStemmer("english")
+    stemmed_words = [stemmer.stem(word) for word in words]
+
+    return stemmed_words
+
+def tok_and_stem(text, stemmer=None):
     if stemmer is None:
         stemmer = SnowballStemmer("english")
     
@@ -391,7 +412,7 @@ def tokenize_and_stem(text, stemmer=None):
     stems = [stemmer.stem(t) for t in filtered_tokens]
     return stems
 
-def plot_similarity_heatmap(data_frame, text_column):
+def similarity_calculation(data_frame, text_column):
     # Merge DataFrame with movie data
     
 
@@ -403,25 +424,42 @@ def plot_similarity_heatmap(data_frame, text_column):
 
     # Create TF-IDF matrix
     tfidf_vectorizer = TfidfVectorizer(max_df=0.8, max_features=200000, min_df=0.1,
-                                       stop_words='english', use_idf=True, tokenizer=tokenize_and_stem, ngram_range=(1,2))
+                                       stop_words='english', use_idf=True, tokenizer=tok_and_stem, ngram_range=(1,2))
     tfidf_matrix = tfidf_vectorizer.fit_transform(data_frame[text_column])
 
     # Calculate cosine similarity
     similarity_distance = cosine_similarity(tfidf_matrix)
 
-    # Create a subset of the matrix (e.g., first 100 rows and columns)
-    subset_matrix = similarity_distance[:100, :100]
+
+    return similarity_distance
+
+
+
+def similarity_plot(similarity_distance, merged_df, film_names):
+    indices = merged_df[merged_df['name'].isin(film_names)].index
+
+    film_names = merged_df.loc[indices, 'name'].tolist() 
+
+    # Subset the matrix based on specified indices or use the first 100 rows and columns by default
+    if indices is not None:
+        subset_matrix = similarity_distance[np.ix_(indices, indices)]
+    else:
+        subset_matrix = similarity_distance[:100, :100]
 
     # Create a heatmap using Seaborn
     sns.set(style="white")  # Optional: Set the background style
     plt.figure(figsize=(10, 8))  # Set the figure size
-    sns.heatmap(subset_matrix, cmap="viridis", annot=False, fmt=".2f", linewidths=.5)
+    
+    # Use a logarithmic color map with a white center
+    sns.heatmap(subset_matrix, cmap="Blues",norm=LogNorm(), annot=True, fmt=".2f", linewidths=.5)
+   
+    # Add film names to the x and y axes
+    plt.xticks(np.arange(len(indices)) + 0.5, [film_names[i] for i in range(len(indices))], rotation=45, ha='right')
+    plt.yticks(np.arange(len(indices)) + 0.5, [film_names[i] for i in range(len(indices))], rotation=0)
 
-    # Show the plot
+     # Show the plot
     plt.title('Subset of Similarity Distance Matrix')
     plt.show()
-
-    return similarity_distance
 
 def calculate_mean_similarity_1(similarity_matrix, chosen_movie_index, movie_indices):
    
@@ -455,8 +493,8 @@ def calculate_mean_similarity_2(movie_index, merged_df, similarity_matrix, genre
     release_year = film_row['year']
 
     # Calculate the release year range for 5 years before and 5 years after
-    before_year = release_year - 5
-    after_year = release_year + 5
+    before_year = release_year - 7
+    after_year = release_year + 7
 
     # Filter movies of the same genre released 5 years before and after
     similar_movies_before = merged_df[
@@ -592,6 +630,7 @@ def calculate_mean_similarity(df_candidates, merged_df, similarity_matrix, genre
     df_candidates['mean_similarity_after'] = mean_similarity_after
 
     return df_candidates
+
 
 
 def process_candidates(candidates, min_elements,movies_features,merged_df,similarity_matrix):
