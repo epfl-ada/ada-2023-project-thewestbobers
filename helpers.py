@@ -38,13 +38,29 @@ import itertools
 def select_subsets(movies):
     '''Return subsets of the 'movies' dataset, by genres
     don't use genres with too few movies'''
-    min_len = 10
+    min_len = 100
 
     all_genres = list(set(itertools.chain.from_iterable(movies.genres.tolist())))
     all_genres.sort()
-    subsets = [(s,create_subset(movies,s)) for s in all_genres]
-    subsets = [element for element in subsets if len(element[1])>min_len]
+    subsets = [(g, create_subset(movies,g)) for g in all_genres]
+    subsets = [element for element in subsets if len(element[1])>=min_len]
     return subsets
+
+def select_subsets_double(subsets):
+    '''Return subsets of the 'movies' dataset, by genres
+    don't use genres with too few movies'''
+    min_len = 100
+
+    subsets_double = []
+    for i, s in enumerate(subsets):
+        genres_double = list(set(itertools.chain.from_iterable(s[1].genres.tolist()))-set([s[0]]))
+        genres_double.sort()
+        s_double = [(s[0], g, create_subset(s[1],g)) for g in genres_double]
+        subsets_double.append(s_double)
+    
+    subsets_double = [s for s_double in subsets_double for s in s_double]
+    subsets_double = [s for s in subsets_double if len(s[2])>=min_len]
+    return subsets_double
 
 def viz_subset(i, subsets, movies):
     '''Visualize a subset i'''
@@ -184,7 +200,7 @@ def viz_peaks(movies, subsets, i, search=None):
         y_offset = 0.05 * (plt.ylim()[1] - plt.ylim()[0])
         plt.text(year+3, value-y_offset, str(year), ha='center', va='bottom', fontsize=12, color=c)
     if search != None:
-        plt.axvspan(max(1910,2*search[1]-search[0]), min(2010,search[1]), color='green', alpha=0.2)
+        plt.axvspan(max(1910,2*search[1]-search[0]), min(2010,search[1]+2), color='green', alpha=0.2)
     plt.xlabel('Year')
     plt.ylabel('Fraction of the genre by year [%]')
     plt.title('Subset : {}'.format(key))
@@ -217,17 +233,17 @@ def get_trends(movies, subsets, threshold):
              [p for p,inflex,q in zip(*get_peaks(movies, subsets, i)) if q>threshold],
              [inflex for p,inflex,q in zip(*get_peaks(movies, subsets, i)) if q>threshold]) for i, s in enumerate(subsets)]
 
-def range_search(subsets, key, year, range_search):
+def range_search(subsets, key, year_min, year_max):
     '''Return a dataframe of a movies subset within a range, before a date'''
     subset = subsets[find_subset(subsets, key)][1]
-    range_results = subset[(subset.year<=year) & (subset.year>=year-range_search)]
+    range_results = subset[(subset.year<=year_max) & (subset.year>=year_min)]
     return range_results
 
 def get_candidates(subsets, trends):
     '''Return all candidates movies to be pivotal, for each subset
     in a range of years before the inflexion year: the difference between the peak and the inflexion
     Output format: array of ('genre_name', peak_year, inflexion_year, DF)'''
-    candidates = [(trend[0], peak, inflex, range_search(subsets, trend[0], inflex, peak-inflex)) for trend in trends
+    candidates = [(trend[0], peak, inflex, range_search(subsets, trend[0], 2*inflex-peak, inflex+2)) for trend in trends
                                                                                   for peak, inflex in zip(trend[1], trend[2])]
     return candidates
 
@@ -257,6 +273,17 @@ def show_candidates(movies, subsets, candidates, key, peak='first'):
     print('Nb of candidates: {}'.format(len(candidates[i][3])))
     c = candidates[i][3].sort_values('year')
     return c
+
+def show_pivotal(pivotals, candidates, i):
+    pivotal_genre = candidates[pivotals[i].trend_number][0]
+    pivotal_peak = candidates[pivotals[i].trend_number][1]
+    pivotal_name = pivotals[i]['name']
+    pivotal_year = pivotals[i]['year']
+    print('==== PIVOTAL MOVIE ====')
+    print('For genre {} of the trend peak {}'.format(pivotal_genre, pivotal_peak))
+    print('\t🏆🏆 >> PIVOTAL IS {} ({})'.format(pivotal_name, pivotal_year))
+    print('\t\t(Quality {})'.format('TBD'))
+    print('')
 
 #-------------------------------------------------------------------------------------------------------
 # PAUL
