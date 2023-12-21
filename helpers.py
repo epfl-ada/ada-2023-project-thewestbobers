@@ -38,12 +38,12 @@ import itertools
 def select_subsets(movies):
     '''Return subsets of the 'movies' dataset, by genres
     don't use genres with too few movies'''
-    min_len = 100
+    min_len = 10
 
     all_genres = list(set(itertools.chain.from_iterable(movies.genres.tolist())))
     all_genres.sort()
     subsets = [(g, create_subset(movies,g)) for g in all_genres]
-    subsets = [element for element in subsets if len(element[1])>=min_len]
+    subsets = [element for element in subsets if len(element[1])>min_len]
     return subsets
 
 def select_subsets_double(subsets):
