@@ -293,7 +293,7 @@ def get_pivotals_of_genres(pivotals):
             pivotals_of_genres[pivotal_genre] = {id}   # Create a new set with the current key
     return pivotals_of_genres
 
-def get_pivotals(movies, subsets, pivotals_list, key, show=True):
+def get_pivotals(movies, subsets, pivotals_list, pivotals_of_genres, key, show=True):
     entries = pivotals_of_genres[key]
 
     pivotals_of_g = {key: pivotals_list[key] for key in entries if key in pivotals_list}
@@ -306,7 +306,7 @@ def get_pivotals(movies, subsets, pivotals_list, key, show=True):
     pivotals = []
     for y,n in zip(pivotal_year, pivotal_name):
         pivotals.append((y,n))
-    return pivotals
+    return pivotals, fig
 
 def show_pivotal(pivotals, candidates, i):
     pivotal_genre = candidates[pivotals[i].trend_number][0]
@@ -319,6 +319,14 @@ def show_pivotal(pivotals, candidates, i):
     print('\t\t(Quality {})'.format('TBD'))
     print('')
 
+def get_all_viz_pivotal(movies, subsets, pivotals_list, pivotals_of_genres):
+    '''Save all figs in a folder'''
+    folder_path = os.path.abspath(os.curdir)
+    for i, g in enumerate(list(pivotals_of_genres.keys())):
+        pivotals_i, fig = get_pivotals(movies, subsets, pivotals_list, pivotals_of_genres, g, show=True)
+        file_name = 'img/pivotals/'+str(i)+'_Pivotals_'+g.replace('/',' ')+'.png'  # or use .jpg, .pdf, etc.
+        save_path = os.path.join(folder_path, file_name)
+        fig.savefig(save_path, dpi=300)
 
 #-------------------------------------------------------------------------------------------------------
 # PAUL
