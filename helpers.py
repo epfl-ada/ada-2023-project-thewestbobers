@@ -590,17 +590,17 @@ def calculate_mean_similarity(df_candidates, merged_df, similarity_matrix, genre
     mean_similarity_after = []
     for id_wiki, release_year in zip(df_candidates['id_wiki'], df_candidates['year']):
         # Calculate the release year range for 5 years before and 5 years after
-        before_year = release_year - 10
-        after_year = release_year + 10
+        before_year = release_year - 7
+        after_year = release_year + 7
 
         # Filter movies of the same genre released 5 years before and after
         similar_movies_before = merged_df[
-            (merged_df['genres'].apply(lambda genres: genre in genres)) &
+            merged_df['genres'].apply(lambda genres: any(g in genres for g in genre)) &
             (merged_df['year'].between(before_year, release_year - 1))
         ]
 
         similar_movies_after = merged_df[
-            (merged_df['genres'].apply(lambda genres: genre in genres)) &
+            merged_df['genres'].apply(lambda genres: any(g in genres for g in genre)) &
             (merged_df['year'].between(release_year + 1, after_year))
         ]
 
@@ -633,33 +633,68 @@ def calculate_mean_similarity(df_candidates, merged_df, similarity_matrix, genre
 
 
 
-def process_candidates(candidates, min_elements,movies_features,merged_df,similarity_matrix):
-    df = pd.DataFrame()
+def process_candidates(candidates, min_elements, movies_features, merged_df, similarity_matrix):
     result_df = pd.DataFrame()
     columns_to_drop = ['id_freebase', 'name', 'year', 'revenue', 'runtime', 'lang', 'countries', 'genres']
     columns_to_drop_2 = ['id_freebase', 'runtime', 'lang', 'countries', 'has_won', 'nominated', 'revenue_part']
-        
+
     for trend_id in range(len(candidates)):
         if len(candidates[trend_id][3]) >= min_elements:
             trend_year = int(candidates[trend_id][2])
-            genre= candidates[trend_id][0]
+            genre = candidates[trend_id][0]
+
+            if isinstance(genre, tuple):
+                # If genre is a tuple, convert it to a string or handle it appropriately
+                genre_str = ', '.join(genre)  # Convert the tuple to a string
+            else:
+                genre_str = genre
 
             df = candidates[trend_id][3].copy()
-        
             df = df.drop(columns=columns_to_drop).copy()
             df = df.merge(movies_features, on='id_wiki')
-            
+
             df['trend_number'] = int(trend_id)
-            df['trend_genre'] = genre
+            df['trend_genre'] = genre_str  # Use the converted genre string
             
-            # Ensure candidates[trend_id][0] is a numeric value (convert if necessary)
-           
-            df['year_from_trend'] = trend_year -df['year'] 
+            df['year_from_trend'] = trend_year - df['year']
             df = calculate_mean_similarity(df, merged_df, similarity_matrix, genre)
             df.drop(columns=columns_to_drop_2, inplace=True)
             result_df = pd.concat([result_df, df], ignore_index=True)
+
     return result_df
-    
+
+def process_candidates2(candidates, min_elements, movies_features, merged_df, similarity_matrix):
+    result_dfs = []  # Accumulate DataFrames in a list
+
+    columns_to_drop = ['id_freebase', 'name', 'year', 'revenue', 'runtime', 'lang', 'countries', 'genres']
+    columns_to_drop_2 = ['id_freebase', 'runtime', 'lang', 'countries', 'has_won', 'nominated', 'revenue_part']
+
+    for trend_id, candidate in enumerate(candidates):
+        if len(candidate[3]) >= min_elements:
+            trend_year = int(candidate[2])
+            genre = candidate[0]
+
+            # Use apply to convert genre to string
+            genre_str = ', '.join(genre) if isinstance(genre, tuple) else genre
+
+            df = candidate[3]
+            df.drop(columns=columns_to_drop, inplace=True)
+            
+            # Merge movies_features after dropping unnecessary columns
+            df = df.merge(movies_features, on='id_wiki')
+
+            df['trend_number'] = trend_id
+            df['trend_genre'] = genre_str
+            df['year_from_trend'] = trend_year - df['year']
+
+            df = calculate_mean_similarity(df, merged_df, similarity_matrix, genre)
+            df.drop(columns=columns_to_drop_2, inplace=True)
+
+            result_dfs.append(df)
+
+    result_df = pd.concat(result_dfs, ignore_index=True)  # Concatenate once after the loop
+    return result_df
+
     
 
 def filter_candidates(df, min_movies_per_trend=2):
