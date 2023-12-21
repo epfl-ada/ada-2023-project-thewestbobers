@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import ast
 import nltk
+import networkx as nx
+import math
 import re
 import statsmodels.api as sm
 import string
@@ -30,6 +32,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 from matplotlib.colors import LogNorm
+from matplotlib.colors import Normalize
 
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt
@@ -740,6 +743,133 @@ def standardize_features(df, features_to_standardize):
     print('There are {} different movies'.format(unique_names_count))
 
     return result_df_ungrouped
+def compute_plot_similarity(movie1_id, movie2_id,similarity_matrix):
+        return similarity_matrix[movie1_id, movie2_id]
+
+def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,similarity_matrix):
+    pivotal=movie_name
+    target_id_wiki = pivotal_mov[pivotal_mov['name'] == movie_name]['id_wiki'].values[0]
+    release_date = merged_df.loc[merged_df['id_wiki'] == target_id_wiki, 'year'].values[0]
+    succes_movies = movies_features[movies_features['genres'].apply(lambda genres: any(g in genres for g in trend_genre))]
+    post_succes_movies= succes_movies[(succes_movies['year']>=release_date -2) & (succes_movies['year']< release_date +5)]
+    best_movies=post_succes_movies.sort_values(by='revenue_norm', ascending=False)
+    first_8_id_wiki = best_movies['id_wiki'].head(8)
+    id_wiki_list = first_8_id_wiki.tolist()
+    if target_id_wiki not in id_wiki_list:
+        id_wiki_list.append(target_id_wiki)
+    
+    G = nx.Graph()
+    tab10_palette = plt.cm.get_cmap("tab10").colors
+    # Dictionary to store cumulative similarity scores for each node
+    cumulative_similarity_scores = {}
+
+    # Iterate over pairs of id_wiki values
+    for i in range(len(id_wiki_list)):
+        for j in range(i + 1, len(id_wiki_list)):
+            movie1_id = merged_df[merged_df['id_wiki'] == id_wiki_list[i]].index[0]
+            movie2_id = merged_df[merged_df['id_wiki'] == id_wiki_list[j]].index[0]
+
+            movie1_name = merged_df.loc[movie1_id, 'name']
+            movie2_name = merged_df.loc[movie2_id, 'name']
+
+            # Assuming compute_plot_similarity returns a single similarity score
+            similarity_score = compute_plot_similarity(movie1_id, movie2_id,similarity_matrix)
+
+            # Update cumulative similarity scores for each node
+            cumulative_similarity_scores[movie1_id] = cumulative_similarity_scores.get(movie1_id, []) + [similarity_score]
+            cumulative_similarity_scores[movie2_id] = cumulative_similarity_scores.get(movie2_id, []) + [similarity_score]
+
+            # Add nodes
+            G.add_node(movie1_id, label=movie1_name, size=sum(cumulative_similarity_scores[movie1_id]))
+            G.add_node(movie2_id, label=movie2_name, size=sum(cumulative_similarity_scores[movie2_id]))
+
+            # Add edge with weight
+            G.add_edge(movie1_id, movie2_id, weight=similarity_score)
+
+    # Compute median similarity scores for each node
+    median_similarity_scores = {node: np.median(scores) for node, scores in cumulative_similarity_scores.items()}
+
+    # Find the central node with the max median similarity score
+    central_node = max(median_similarity_scores, key=median_similarity_scores.get)
+
+    # Set a custom color for the pivotal node
+
+    # Determine the number of nodes excluding the central node
+    num_other_nodes = len(G.nodes) - 1
+
+    # Set the radius of the circle
+    radius = 2.0  # You can adjust this value based on your preference
+
+    # Calculate the angle between each node on the circle
+    angle_increment = 2 * math.pi / num_other_nodes
+
+    # Calculate positions for each node on the circle
+    pos = {central_node: [0, 0]}  # Set the position of the central node
+    j = 0
+    for i, node in enumerate(G.nodes):
+        if node != central_node:
+            j += 1
+            angle = j * angle_increment
+            x = radius * math.cos(angle) + pos[central_node][0]
+            y = radius * math.sin(angle) + pos[central_node][1]
+            pos[node] = [x, y]
+
+    # Extract edge weights
+    edge_weights = [G[u][v]['weight'] for u, v in G.edges()]
+
+    # Normalize edge weights to use for scaling edge thickness
+    max_weight = max(edge_weights)
+    min_weight = min(edge_weights)
+    scaled_weights = [5 * (weight - min_weight) / (max_weight - min_weight) + 1 for weight in edge_weights]
+
+    # Extract node sizes, scaling them with a square root function
+    # Extract node sizes, scaling them with a square root function
+    sqrt_scaling_factor = 6.5  # Adjust this factor for square root scaling
+    factor= 10
+    node_sizes = [(median_similarity_scores[n]*factor) ** sqrt_scaling_factor for n in G.nodes]
+
+
+    # Extract node colors
+    node_colors = [tab10_palette[4] if G.nodes[n]['label'] == pivotal else tab10_palette[1] for n in G.nodes]
+    node_labels = {n: G.nodes[n]['label'] for n in G.nodes}
+    # Set up a colormap based on similarity scores
+    cmap = plt.cm.get_cmap('Blues')  # Using 'Blues' colormap for shades of blue  # Using 'viridis' for lower values
+    norm = Normalize(vmin=min_weight, vmax=max_weight)
+
+    # Set a larger plot size
+    plt.figure(figsize=(14, 9))
+
+    # Draw the network with colored edges and edge thickness proportional to similarity score
+    # Assuming node_labels is a dictionary with node labels
+    nx.draw(
+        G,
+        pos,
+        with_labels=True,
+        labels=node_labels,
+        node_size=node_sizes,
+        node_color=node_colors,
+        width=scaled_weights,
+        edge_color=edge_weights,
+        edge_cmap=cmap,
+        edge_vmin=min_weight,
+        edge_vmax=max_weight,
+        font_size=8,
+        font_color='black'
+    )
+
+    # Add a colorbar to show the mapping between similarity scores and colors
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap))
+    cbar.set_label('Similarity Score')
+    legend_labels = {'Pivotal Movie': tab10_palette[4], 'Non-Pivotal Movie': tab10_palette[1]}
+    legend_handles = [
+        plt.Line2D([0], [0], marker='o', color='w', label=label, markerfacecolor=color, markersize=10) for label, color in
+        legend_labels.items()]
+    plt.legend(handles=legend_handles, loc='upper right')
+
+    # Save the figure with tight layout
+    plt.savefig('network_plot_colored_edges_centered_pivotal.png', bbox_inches='tight')
+
+    plt.show()
 #-------------------------------------------------------------------------------------------------------
 # MEHDI
 
