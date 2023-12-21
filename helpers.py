@@ -160,7 +160,7 @@ def get_peaks(movies, subsets, i):
     peaks, inflexions, quality = peak_detection(distrib, frac)
     return list(distrib.index[peaks]), list(distrib.index[inflexions]), quality
 
-def viz_peaks(movies, subsets, i, search=None):
+def viz_peaks(movies, subsets, i, search=None, pivotals=None):
     '''Visualize the peaks or trends of a subset i'''
     key = subsets[i][0]
     subset = subsets[i][1]
@@ -176,34 +176,40 @@ def viz_peaks(movies, subsets, i, search=None):
 
     # Plot the data
     fig, axs = plt.subplots(1,1,figsize=(12, 6))
-    plt.plot(distrib.index, distrib, label='Original distribution')
-    plt.plot(distrib.index, x, label='Smoothed distribution')
+    tab10_palette = plt.cm.get_cmap("tab10").colors
+    plt.plot(distrib.index, distrib, '--', label='Original distribution', alpha=0.3, color=tab10_palette[2])
+    plt.plot(distrib.index, x, label='Smoothed distribution', color=tab10_palette[1])
     plt.plot(distrib.index[peaks], x[peaks], "o", color='k', label='Peaks')
     plt.plot(distrib.index[inflexions], x[inflexions], "+", color='k', label='Inflexions')
-    plt.plot(distrib.index, np.zeros_like(distrib), "--", color="gray")
-    plt.plot(distrib.index, np.ones_like(distrib)*frac, "--", color="red", label='Subset overall fraction')
+    plt.plot(distrib.index, np.ones_like(distrib)*frac, "--", color=tab10_palette[3], label='Subset historic fraction', alpha=0.3)
     y_offset = 0.05 * (plt.ylim()[1] - plt.ylim()[0])
-    plt.text(distrib.index[0], frac+y_offset/2, 'historic fraction: '+str(round(frac,3))+' %', ha='left', va='bottom', fontsize=8, color='red', alpha=0.5)
+    plt.text(distrib.index[0], frac-0.7*y_offset, 'historic fraction: '+str(round(frac,3))+' %', ha='left', va='bottom', fontsize=8, color=tab10_palette[3], alpha=1)
     for p, q in zip(peaks, quality):
         year = distrib.index[p]
         value = x[p]
         tr = 0.2
         c = 'red' if q < tr else 'k'
         y_offset = 0.05 * (plt.ylim()[1] - plt.ylim()[0])
-        plt.text(year+5, value, str(year), ha='center', va='bottom', fontsize=15, color=c)
-        plt.text(year+5, value+y_offset, 'Q:'+str(round(q,3)), ha='center', va='bottom', fontsize=12, color=c)
+        plt.text(year+3, value, str(year), ha='center', va='bottom', fontsize=15, color=c)
+        plt.text(year+3, value+y_offset, 'Q:'+str(round(q,3)), ha='center', va='bottom', fontsize=12, color=c)
     for i, q in zip(inflexions, quality):
         year = distrib.index[i]
         value = x[i]
         tr = 0.2
         c = 'red' if q < tr else 'k'
         y_offset = 0.05 * (plt.ylim()[1] - plt.ylim()[0])
-        plt.text(year+3, value-y_offset, str(year), ha='center', va='bottom', fontsize=12, color=c)
+        plt.text(year-3, value+0.2*y_offset, str(year), ha='center', va='bottom', fontsize=12, color=c)
     if search != None:
         plt.axvspan(max(1910,2*search[1]-search[0]), min(2010,search[1]+2), color='green', alpha=0.2)
+    if pivotals != None:
+        pivotal_y = [x[distrib.index==y] for y in pivotals[0]]
+        plt.plot(pivotals[0], pivotal_y, "o", color=tab10_palette[3], label='Pivotals', markeredgecolor='black')
+        for i, y in enumerate(pivotal_y):
+            plt.text(pivotals[0][i], y-1.2*y_offset, str(pivotals[1][i]), ha='center', va='bottom', fontsize=12, fontweight='bold', color=tab10_palette[0])
+            plt.text(pivotals[0][i], y-2*y_offset, '('+str(pivotals[0][i])+')', ha='center', va='bottom', fontsize=12, fontweight='bold', color=tab10_palette[0])
     plt.xlabel('Year')
     plt.ylabel('Fraction of the genre by year [%]')
-    plt.title('Subset : {}'.format(key))
+    plt.title('Subset : {} (size {})'.format(key, len(subset)))
     plt.grid(alpha=0.3, axis='y')
     plt.legend()
     plt.show()
@@ -274,6 +280,34 @@ def show_candidates(movies, subsets, candidates, key, peak='first'):
     c = candidates[i][3].sort_values('year')
     return c
 
+def get_pivotals_of_genres(pivotals):
+    pivotals_of_genres = {}
+    for id, pivotal in pivotals.items():
+        # Extracting the 'trend_genre' value from the series
+        pivotal_genre = pivotal['trend_genre']
+        
+        # Adding the key to the list of entries for the corresponding 'trend_genre'
+        if pivotal_genre in pivotals_of_genres:
+            pivotals_of_genres[pivotal_genre].add(id)  # Add the key to the existing set
+        else:
+            pivotals_of_genres[pivotal_genre] = {id}   # Create a new set with the current key
+    return pivotals_of_genres
+
+def get_pivotals(movies, subsets, pivotals_list, key, show=True):
+    entries = pivotals_of_genres[key]
+
+    pivotals_of_g = {key: pivotals_list[key] for key in entries if key in pivotals_list}
+    pivotal_year = [p[1]['year'] for p in pivotals_of_g.items()]
+    pivotal_name = [p[1]['name'] for p in pivotals_of_g.items()]
+
+    if show==True:
+        fig = viz_peaks(movies, subsets, find_subset(subsets, key), pivotals=(pivotal_year, pivotal_name))
+
+    pivotals = []
+    for y,n in zip(pivotal_year, pivotal_name):
+        pivotals.append((y,n))
+    return pivotals
+
 def show_pivotal(pivotals, candidates, i):
     pivotal_genre = candidates[pivotals[i].trend_number][0]
     pivotal_peak = candidates[pivotals[i].trend_number][1]
@@ -284,6 +318,7 @@ def show_pivotal(pivotals, candidates, i):
     print('\t🏆🏆 >> PIVOTAL IS {} ({})'.format(pivotal_name, pivotal_year))
     print('\t\t(Quality {})'.format('TBD'))
     print('')
+
 
 #-------------------------------------------------------------------------------------------------------
 # PAUL
