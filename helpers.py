@@ -55,12 +55,23 @@ def select_subsets_double(subsets):
     for i, s in enumerate(subsets):
         genres_double = list(set(itertools.chain.from_iterable(s[1].genres.tolist()))-set([s[0]]))
         genres_double.sort()
-        s_double = [(s[0], g, create_subset(s[1],g)) for g in genres_double]
+        s_double = [((s[0], g), create_subset(s[1],g)) for g in genres_double]
         subsets_double.append(s_double)
     
     subsets_double = [s for s_double in subsets_double for s in s_double]
-    subsets_double = [s for s in subsets_double if len(s[2])>=min_len]
-    return subsets_double
+    subsets_double = [s for s in subsets_double if len(s[1])>=min_len]
+    subsets_double_unique = []
+    unique_combinations = set()
+    for (str1, str2), df in subsets_double:
+        # Sort the tuple to ensure ('Comedy', 'Action') is treated the same as ('Action', 'Comedy')
+        sorted_tuple = tuple(sorted((str1, str2)))
+        if sorted_tuple not in unique_combinations:
+            # Add the sorted tuple to the set of unique combinations
+            unique_combinations.add(sorted_tuple)
+            # Add the original tuple and df to the new list of unique subsets
+            subsets_double_unique.append(((str1, str2), df))
+
+    return subsets_double_unique
 
 def viz_subset(i, subsets, movies):
     '''Visualize a subset i'''
@@ -232,12 +243,29 @@ def find_subset(subsets, key):
             result = i
     return result
 
+def find_subset_double(subsets_double, key1, key2):
+    '''Find a peticular subset with its key'''
+    result = None
+    for i, s in enumerate(subsets_double):
+        if ((s[0][0]==key1) & (s[0][1]==key2)) | ((s[0][0]==key2) & (s[0][1]==key1)):
+            result = i
+    return result
+
 def get_trends(movies, subsets, threshold):
     '''Returns a list of tuples of this format : ('genre_name', [peak_years], [inflexion_years])
     for all combination of Genre and Peak'''
-    return [(s[0],
-             [p for p,inflex,q in zip(*get_peaks(movies, subsets, i)) if q>threshold],
-             [inflex for p,inflex,q in zip(*get_peaks(movies, subsets, i)) if q>threshold]) for i, s in enumerate(subsets)]
+    trends = []
+    for i, s in enumerate(subsets):
+        peaks = []
+        inflexions = []
+        quality = []
+        for p,inflex,q in zip(*get_peaks(movies, subsets, i)):
+            if q>threshold:
+                peaks.append(p)
+                inflexions.append(inflex)
+                quality.append(q)
+        trends.append((s[0],peaks,inflexions,quality))
+    return trends
 
 def range_search(subsets, key, year_min, year_max):
     '''Return a dataframe of a movies subset within a range, before a date'''
@@ -250,6 +278,20 @@ def get_candidates(subsets, trends):
     in a range of years before the inflexion year: the difference between the peak and the inflexion
     Output format: array of ('genre_name', peak_year, inflexion_year, DF)'''
     candidates = [(trend[0], peak, inflex, range_search(subsets, trend[0], 2*inflex-peak, inflex+2)) for trend in trends
+                                                                                  for peak, inflex in zip(trend[1], trend[2])]
+    return candidates
+
+def range_search_double(subsets, key, year_min, year_max):
+    '''Return a dataframe of a movies subset within a range, before a date'''
+    subset = subsets[find_subset_double(subsets, key[0], key[1])][1]
+    range_results = subset[(subset.year<=year_max) & (subset.year>=year_min)]
+    return range_results
+
+def get_candidates_double(subsets_double, trends):
+    '''Return all candidates movies to be pivotal, for each subset
+    in a range of years before the inflexion year: the difference between the peak and the inflexion
+    Output format: array of ('genre_name', peak_year, inflexion_year, DF)'''
+    candidates = [(trend[0], peak, inflex, range_search_double(subsets_double, trend[0], 2*inflex-peak, inflex+2)) for trend in trends
                                                                                   for peak, inflex in zip(trend[1], trend[2])]
     return candidates
 
@@ -274,6 +316,16 @@ def show_candidates(movies, subsets, candidates, key, peak='first'):
     '''Display candidates for trend i'''
     i = find_candidates(candidates,key,peak=peak)
     fig = viz_peaks(movies, subsets, find_subset(subsets, key), search=candidates[i][1:3])
+    print('Candidates of pivotal of genre {}, for trend peak in {} and trend inflexion in {}'
+          .format(candidates[i][0],candidates[i][1],candidates[i][2]))
+    print('Nb of candidates: {}'.format(len(candidates[i][3])))
+    c = candidates[i][3].sort_values('year')
+    return c
+
+def show_candidates_double(movies, subsets, candidates, key1, key2, peak='first'):
+    '''Display candidates for trend i'''
+    i = find_candidates(candidates,(key1,key2),peak=peak)
+    fig = viz_peaks(movies, subsets, find_subset_double(subsets, key1, key2), search=candidates[i][1:3])
     print('Candidates of pivotal of genre {}, for trend peak in {} and trend inflexion in {}'
           .format(candidates[i][0],candidates[i][1],candidates[i][2]))
     print('Nb of candidates: {}'.format(len(candidates[i][3])))
