@@ -746,11 +746,12 @@ def standardize_features(df, features_to_standardize):
 def compute_plot_similarity(movie1_id, movie2_id,similarity_matrix):
         return similarity_matrix[movie1_id, movie2_id]
 
-def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,similarity_matrix):
+def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,similarity_matrix,df_plot):
     pivotal=movie_name
     target_id_wiki = pivotal_mov[pivotal_mov['name'] == movie_name]['id_wiki'].values[0]
     release_date = merged_df.loc[merged_df['id_wiki'] == target_id_wiki, 'year'].values[0]
     succes_movies = movies_features[movies_features['genres'].apply(lambda genres: any(g in genres for g in trend_genre))]
+    succes_movies = succes_movies.merge(df_plot, on='id_wiki')
     post_succes_movies= succes_movies[(succes_movies['year']>=release_date -2) & (succes_movies['year']< release_date +5)]
     best_movies=post_succes_movies.sort_values(by='revenue_norm', ascending=False)
     first_8_id_wiki = best_movies['id_wiki'].head(8)
