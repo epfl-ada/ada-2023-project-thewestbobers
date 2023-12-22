@@ -65,7 +65,7 @@ We ended up with a clean dataset, containing movies in English that have been pr
 
 # Organization within the team 👥
 
-<img src="images/organigram.PNG" style="width:100%; height:auto;">
+<img src="images/organigram.PNG" style="width:40%; height:auto;">
 
 | Team Member | Tasks |
 |-------------|-------|
