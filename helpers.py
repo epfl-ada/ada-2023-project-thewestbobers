@@ -31,6 +31,7 @@ from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 from matplotlib.colors import LogNorm
 from matplotlib.colors import Normalize
 
@@ -808,6 +809,141 @@ def standardize_features(df, features_to_standardize):
     return result_df_ungrouped
 def compute_plot_similarity(movie1_id, movie2_id,similarity_matrix):
         return similarity_matrix[movie1_id, movie2_id]
+    
+def training (result_df_standardized) :
+    # PIVOTAL MOVIES
+    STAR_WARS_IV = result_df_standardized[(result_df_standardized['id_wiki'] == 52549) & (result_df_standardized['trend_genre'] == 'Science Fiction')].head(1)
+    THE_KARATE_KID = result_df_standardized[(result_df_standardized['id_wiki'] == 657809) & (result_df_standardized['trend_genre'] == 'Martial Arts Film')].head(1)
+    TOY_STORY = result_df_standardized[(result_df_standardized['id_wiki'] == 53085) & (result_df_standardized['trend_genre'] == 'Computer Animation')].head(1)
+    THE_SEARCHERS = result_df_standardized[(result_df_standardized['id_wiki'] == 76335) & (result_df_standardized['trend_genre'] == 'Epic Western')].head(1)
+    BONNIE_AND_CLYDE= result_df_standardized[(result_df_standardized['id_wiki'] == 68245) & (result_df_standardized['trend_genre'] == 'Gangster Film')].head(1)
+    PHILADELPHIA = result_df_standardized[(result_df_standardized['id_wiki'] == 468293) & (result_df_standardized['trend_genre'] == 'Gay')].head(1)
+    PULP_FICTION = result_df_standardized[(result_df_standardized['id_wiki'] == 54173) & (result_df_standardized['trend_genre'] == 'Crime Comedy')].head(1)
+    THE_LION_KING = result_df_standardized[(result_df_standardized['id_wiki'] == 88678) & (result_df_standardized['trend_genre'] == 'Animation')].head(1)
+    THE_EXORCIST = result_df_standardized[(result_df_standardized['id_wiki'] == 725459) & (result_df_standardized['trend_genre'] == 'Horror')].head(1)
+    THE_SHINING = result_df_standardized[(result_df_standardized['id_wiki'] == 1186616) & (result_df_standardized['trend_genre'] == 'Psychological thriller')].head(1)
+    TITANIC= result_df_standardized[(result_df_standardized['id_wiki'] == 52371) & (result_df_standardized['trend_genre'] == 'Tragedy')].head(1)
+    ALIEN = result_df_standardized[(result_df_standardized['id_wiki'] == 23487440) & (result_df_standardized['trend_genre'] == 'Creature Film')].head(1)
+    PIVOTAL_LIST = [
+        STAR_WARS_IV,
+        THE_KARATE_KID,
+        TOY_STORY,
+        THE_SEARCHERS,
+        BONNIE_AND_CLYDE,
+        PHILADELPHIA,
+        PULP_FICTION,
+        THE_LION_KING,
+        THE_EXORCIST,
+        THE_SHINING,
+        TITANIC,
+        ALIEN
+    ]
+
+    PIVOTAL_DF = pd.concat(PIVOTAL_LIST, ignore_index=True)
+
+    # NON-PIVOTAL MOVIES
+    NON_PIVOTAL_0 =  result_df_standardized[(result_df_standardized['id_wiki'] != 52549) & (result_df_standardized['trend_genre'] == 'Science Fiction')]
+    NON_PIVOTAL_1 = result_df_standardized[(result_df_standardized['id_wiki'] != 91133) & (result_df_standardized['trend_genre'] == 'Martial Arts Film')].head(1)
+    NON_PIVOTAL_2 = result_df_standardized[(result_df_standardized['id_wiki'] != 53085) & (result_df_standardized['trend_genre'] == 'Computer Animation')].head(1)
+    NON_PIVOTAL_3 = result_df_standardized[(result_df_standardized['id_wiki'] != 76335) & (result_df_standardized['trend_genre'] == 'Epic Western')].head(1)
+    NON_PIVOTAL_4 = result_df_standardized[(result_df_standardized['id_wiki'] != 68245) & (result_df_standardized['trend_genre'] == 'Gangster Film')].head(1)
+    NON_PIVOTAL_5 = result_df_standardized[(result_df_standardized['id_wiki'] != 468293) & (result_df_standardized['trend_genre'] == 'Gay')].head(1)
+    NON_PIVOTAL_6 = result_df_standardized[(result_df_standardized['id_wiki'] != 54173) & (result_df_standardized['trend_genre'] == 'Crime Comedy')].head(1)
+    NON_PIVOTAL_7 = result_df_standardized[(result_df_standardized['id_wiki'] != 88678) & (result_df_standardized['trend_genre'] == 'Animation')].head(1)
+    NON_PIVOTAL_8 = result_df_standardized[(result_df_standardized['id_wiki'] != 725459) & (result_df_standardized['trend_genre'] == 'Horror')].head(1)
+    NON_PIVOTAL_9 = result_df_standardized[(result_df_standardized['id_wiki'] != 1186616) & (result_df_standardized['trend_genre'] == 'Psychological thriller')].head(1)
+    NON_PIVOTAL_10 = result_df_standardized[(result_df_standardized['id_wiki'] != 52371) & (result_df_standardized['trend_genre'] == 'Tragedy')].head(1)
+    NON_PIVOTAL_11 = result_df_standardized[(result_df_standardized['id_wiki'] != 23487440) & (result_df_standardized['trend_genre'] == 'Creature Film')].head(1)
+
+    NON_PIVOTAL_LIST = [
+        NON_PIVOTAL_0,
+        NON_PIVOTAL_1,
+        NON_PIVOTAL_2,
+        NON_PIVOTAL_3,
+        NON_PIVOTAL_4,
+        NON_PIVOTAL_5,
+        NON_PIVOTAL_6,
+        NON_PIVOTAL_7,
+        NON_PIVOTAL_8,
+        NON_PIVOTAL_9,
+        NON_PIVOTAL_10,
+        NON_PIVOTAL_11
+    ]
+
+    # Concatenate the DataFrames
+    NON_PIVOTAL_DF = pd.concat(NON_PIVOTAL_LIST, ignore_index=True)
+
+    # Concatenate all DataFrames
+    all_movies=pd.concat([PIVOTAL_DF,NON_PIVOTAL_DF])
+
+    # Extract relevant features for
+
+    # Extract relevant features for training
+    features_train = all_movies[['rating', 'nbr_won','votes', 'nbr_nomination', 'revenue_norm', 'mean_similarity_before','mean_similarity_after','year_from_trend']]
+
+    # Create the target variable y_train (1 for pivotal movies, 0 for non-pivotal movies)
+    y_train = [1] * len(PIVOTAL_DF) + [0] * len(NON_PIVOTAL_DF)
+    
+    return features_train,y_train
+
+def perform_logistic_regression(training_points, labels, feature_names):
+    # Create a logistic regression model
+    logistic = LogisticRegression(solver='lbfgs')
+    
+    # Fit the model to the training data
+    logistic.fit(training_points, labels)
+    
+    # Print coefficients for each feature
+    coefficients = logistic.coef_[0]
+    print("Coefficents: \n")
+    for feature_name, coefficient in zip(feature_names, coefficients):
+        rounded_coefficient = round(coefficient, 5)
+        print(f"{feature_name}: {rounded_coefficient}")
+    
+    # Print intercept
+    rounded_intercept = round(logistic.intercept_[0], 5)
+    print("\n Intercept:", rounded_intercept)
+    return logistic
+
+def find_most_likely_pivotal_movie(result_df_standardized, logistic):
+    
+    most_likely_indices = []
+    # Group by trend_id
+    grouped_by_trend = result_df_standardized.groupby('trend_id')
+
+    # Dictionary to store most likely pivotal movie for each group
+    most_likely_pivotal = {'name': [], 'id_wiki': [], 'trend_genre': [], 'trend_id': []}
+
+    # Iterate over groups
+    for trend_id, group_df in grouped_by_trend:
+        # Select features and labels for the group
+        features_group = group_df[['rating', 'nbr_won', 'votes', 'nbr_nomination', 'revenue_norm', 'mean_similarity_before', 'mean_similarity_after', 'year_from_trend']]
+
+        # Predict probabilities for being pivotal
+        probabilities = logistic.predict_proba(features_group)[:, 1]
+
+        # Identify the index with the highest probability
+        most_likely_index = probabilities.argmax()
+        most_likely_indices.append(most_likely_index)
+        # Get the details of the most likely pivotal movie
+        most_likely_movie = group_df.iloc[most_likely_index]
+
+        # Store the result in the dictionary
+        most_likely_pivotal['name'].append(most_likely_movie['name'])
+        most_likely_pivotal['id_wiki'].append(most_likely_movie['id_wiki'])
+        most_likely_pivotal['trend_id'].append(trend_id)
+        most_likely_pivotal['trend_genre'].append(most_likely_movie['trend_genre'])
+
+    # Create the DataFrame
+    pivotal_mov = pd.DataFrame(most_likely_pivotal)
+
+    # Display the most likely pivotal movie for each group
+    for trend_id in pivotal_mov['trend_id'].unique():
+        movie_info = pivotal_mov[pivotal_mov['trend_id'] == trend_id].iloc[0]
+        print(f"Trend {trend_id}  : Most Likely Pivotal Movie - {movie_info['name']}")
+        
+    return pivotal_mov, most_likely_indices
+
 
 def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,similarity_matrix,df_plot):
     pivotal=movie_name
