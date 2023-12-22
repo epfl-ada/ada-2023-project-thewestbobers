@@ -354,15 +354,14 @@ def get_pivotals_double(movies, subsets, pivotals, key1, key2):
     fig = viz_peaks(movies, subsets, find_subset_double(subsets, key1, key2), pivotals=(pivotal_year, pivotal_name))
     return fig
 
-def show_pivotal(pivotals, candidates, i):
-    pivotal_genre = candidates[pivotals[i].trend_number][0]
-    pivotal_peak = candidates[pivotals[i].trend_number][1]
-    pivotal_name = pivotals[i]['name']
-    pivotal_year = pivotals[i]['year']
+def show_pivotal(pivotals, movies, i):
+    pivotal_genre = pivotals['trend_genre'].iloc[i]
+    pivotal_peak = pivotals['trend_id'].iloc[i].split('of years ')[1]
+    pivotal_name = pivotals['name'].iloc[i]
+    pivotal_year = movies[movies.id_wiki==pivotals['id_wiki'].iloc[i]]['year'].values[0]
     print('==== PIVOTAL MOVIE ====')
     print('For genre {} of the trend peak {}'.format(pivotal_genre, pivotal_peak))
     print('\t🏆🏆 >> PIVOTAL IS {} ({})'.format(pivotal_name, pivotal_year))
-    print('\t\t(Quality {})'.format('TBD'))
     print('')
 
 def get_all_viz_pivotal(movies, subsets, subsets_double, pivotals_simple, pivotals_double):
