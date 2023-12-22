@@ -69,7 +69,7 @@ We ended up with a clean dataset, containing movies in English that have been pr
 
 | Team Member | Tasks |
 |-------------|-------|
-| David       | - website - plots interractifs |
+| David       | - website - plots interactifs |
 | Manuel      | - augmentation - website |
 | Arthur      | - shape analysis - trends - ML|
 | Mehdi       | - augmentation - cleaning - website |
