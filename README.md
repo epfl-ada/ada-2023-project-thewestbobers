@@ -16,5 +16,5 @@ https://davidlacour.github.io/TheWestBobersWebsite/
 | Manuel      | - website |
 | Arthur      | - shape analysis - trends - ML|
 | Mehdi       | - augmentations -  website |
-| Paul        | - ML |
+| Paul        | - ML - network |
 
