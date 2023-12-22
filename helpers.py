@@ -1011,6 +1011,7 @@ def get_all_viz_pivotal(movies, subsets, subsets_double, pivotals_simple, pivota
 
 #-------------------------------------------------------------------------------------------------------
 # PAUL
+# PAUL
 def remove_stopwords_and_punctuation(text):
     # Tokenize the text into words
     words = word_tokenize(text)
@@ -1529,8 +1530,9 @@ def perform_logistic_regression(training_points, labels, feature_names):
     return logistic
 
 def find_most_likely_pivotal_movie(result_df_standardized, logistic):
-    
     most_likely_indices = []
+    all_probabilities = []  # List to store probabilities for each movie
+    
     # Group by trend_id
     grouped_by_trend = result_df_standardized.groupby('trend_id')
 
@@ -1544,10 +1546,12 @@ def find_most_likely_pivotal_movie(result_df_standardized, logistic):
 
         # Predict probabilities for being pivotal
         probabilities = logistic.predict_proba(features_group)[:, 1]
+        all_probabilities.extend(probabilities)  # Append probabilities to the list
 
         # Identify the index with the highest probability
         most_likely_index = probabilities.argmax()
         most_likely_indices.append(most_likely_index)
+        
         # Get the details of the most likely pivotal movie
         most_likely_movie = group_df.iloc[most_likely_index]
 
@@ -1559,24 +1563,24 @@ def find_most_likely_pivotal_movie(result_df_standardized, logistic):
 
     # Create the DataFrame
     pivotal_mov = pd.DataFrame(most_likely_pivotal)
+    
 
     # Display the most likely pivotal movie for each group
     for trend_id in pivotal_mov['trend_id'].unique():
         movie_info = pivotal_mov[pivotal_mov['trend_id'] == trend_id].iloc[0]
-        print(f"Trend {trend_id}  : Most Likely Pivotal Movie - {movie_info['name']}")
+        print(f"Trend {trend_id}  : Most Likely Pivotal Movie - {movie_info['name']}") 
         
-    return pivotal_mov, most_likely_indices
-
+    return pivotal_mov, most_likely_indices,all_probabilities
 
 def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,similarity_matrix,df_plot):
     pivotal=movie_name
     target_id_wiki = pivotal_mov[pivotal_mov['name'] == movie_name]['id_wiki'].values[0]
     release_date = merged_df.loc[merged_df['id_wiki'] == target_id_wiki, 'year'].values[0]
-    succes_movies = movies_features[movies_features['genres'].apply(lambda genres: any(g in genres for g in trend_genre))]
+    succes_movies = movies_features[movies_features['genres'].apply(lambda genres: all(g in genres for g in trend_genre))]
     succes_movies = succes_movies.merge(df_plot, on='id_wiki')
-    post_succes_movies= succes_movies[(succes_movies['year']>=release_date -2) & (succes_movies['year']< release_date +5)]
+    post_succes_movies= succes_movies[(succes_movies['year']>=release_date -2) & (succes_movies['year']< release_date +7)]
     best_movies=post_succes_movies.sort_values(by='revenue_norm', ascending=False)
-    first_8_id_wiki = best_movies['id_wiki'].head(8)
+    first_8_id_wiki = best_movies['id_wiki'].head(7)
     id_wiki_list = first_8_id_wiki.tolist()
     if target_id_wiki not in id_wiki_list:
         id_wiki_list.append(target_id_wiki)
@@ -1650,7 +1654,7 @@ def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,sim
     sqrt_scaling_factor = 6.5  # Adjust this factor for square root scaling
     factor= 10
     node_sizes = [(median_similarity_scores[n]*factor) ** sqrt_scaling_factor for n in G.nodes]
-
+    
 
     # Extract node colors
     node_colors = [tab10_palette[4] if G.nodes[n]['label'] == pivotal else tab10_palette[1] for n in G.nodes]
@@ -1658,7 +1662,7 @@ def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,sim
     # Set up a colormap based on similarity scores
     cmap = plt.cm.get_cmap('Blues')  # Using 'Blues' colormap for shades of blue  # Using 'viridis' for lower values
     norm = Normalize(vmin=min_weight, vmax=max_weight)
-
+    
     # Set a larger plot size
     plt.figure(figsize=(14, 9))
 
@@ -1688,10 +1692,18 @@ def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,sim
         plt.Line2D([0], [0], marker='o', color='w', label=label, markerfacecolor=color, markersize=10) for label, color in
         legend_labels.items()]
     plt.legend(handles=legend_handles, loc='upper right')
-
+   
     # Save the figure with tight layout
-    plt.savefig('network_plot_colored_edges_centered_pivotal.png', bbox_inches='tight')
+    # Create the 'Image' folder if it doesn't exist
+    folder_path = 'Image'
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
 
+    # Save the figure with tight layout in the 'Image' folder
+    file_path = os.path.join(folder_path, 'similarity_network_' + movie_name + '.png')
+    plt.savefig(file_path, bbox_inches='tight')
+    plt.savefig('similarity_network_' + movie_name +'.png', bbox_inches='tight')
+    
     plt.show()
 #-------------------------------------------------------------------------------------------------------
 # MEHDI
