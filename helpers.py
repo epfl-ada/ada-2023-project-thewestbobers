@@ -575,6 +575,66 @@ def calculate_mean_similarity_4(df_candidates, merged_df, similarity_matrix, gen
 
     return df_candidates
 
+def calculate_mean_similarity_5(df_candidates, merged_df, similarity_matrix, genre):
+    """
+    Calculate the mean similarity of the plot of a given film compared to films of the same genre
+    released 10 years before and 10 years after.
+
+    Parameters:
+    - df_candidates (pandas.DataFrame): DataFrame containing movie candidates and their information.
+    - merged_df (pandas.DataFrame): Merged DataFrame containing movie information.
+    - similarity_matrix (numpy.ndarray): Matrix containing pairwise similarities between movie plots.
+    - genre (str): Genre of the films to compare.
+
+    Returns:
+    - pandas.DataFrame: Updated DataFrame (df_candidates) with a new column for delta_similarity.
+    """
+    mean_similarity_before = []
+    mean_similarity_after = []
+    for id_wiki, release_year in zip(df_candidates['id_wiki'], df_candidates['year']):
+        # Calculate the release year range for 5 years before and 5 years after
+        before_year = release_year - 7
+        after_year = release_year + 7
+
+        # Filter movies of the same genre released 5 years before and after
+        similar_movies_before = merged_df[
+            merged_df['genres'].apply(lambda genres: genre in genres) &
+            (merged_df['year'].between(before_year, release_year - 1))
+        ]
+
+        similar_movies_after = merged_df[
+            merged_df['genres'].apply(lambda genres: genre in genres) &
+            (merged_df['year'].between(release_year + 1, after_year))
+        ]
+
+        # Get the indices of the movies
+        similar_indices_before = similar_movies_before.index.tolist()
+        similar_indices_after = similar_movies_after.index.tolist()
+
+        # Check if the DataFrame is not empty before accessing the index
+        if not merged_df[merged_df['id_wiki'] == id_wiki].empty:
+            index_sim_mat = merged_df[merged_df['id_wiki'] == id_wiki].index.values[0]
+
+            # Calculate the mean similarity
+            mean_similarity_before_1 = np.mean(similarity_matrix[index_sim_mat, similar_indices_before])
+            mean_similarity_after_1 = np.mean(similarity_matrix[index_sim_mat, similar_indices_after])
+
+            # Append the mean_similarity_after value to the list
+            mean_similarity_before.append((mean_similarity_before_1))
+            mean_similarity_after.append((mean_similarity_after_1))
+
+        else:
+            # Handle the case when no match is found for the id_wiki
+            mean_similarity_before.append((np.nan))
+            mean_similarity_after.append((np.nan))
+
+    # Add a new column 'delta_similarity' to df_candidates
+    df_candidates['mean_similarity_before'] = mean_similarity_before
+    df_candidates['mean_similarity_after'] = mean_similarity_after
+
+    return df_candidates
+
+
 def calculate_mean_similarity(df_candidates, merged_df, similarity_matrix, genre):
     """
     Calculate the mean similarity of the plot of a given film compared to films of the same genre
@@ -655,12 +715,14 @@ def process_candidates(candidates, min_elements, movies_features, merged_df, sim
             df = candidates[trend_id][3].copy()
             df = df.drop(columns=columns_to_drop).copy()
             df = df.merge(movies_features, on='id_wiki')
-
-            df['trend_number'] = int(trend_id)
+            
+            df['trend_year']=trend_year
+            df['trend_number'] = 1000+int(trend_id)
             df['trend_genre'] = genre_str  # Use the converted genre string
+            df['trend_id']= genre_str + ' of years ' + str(trend_year)
             
             df['year_from_trend'] = trend_year - df['year']
-            df = calculate_mean_similarity(df, merged_df, similarity_matrix, genre)
+            df = calculate_mean_similarity_5(df, merged_df, similarity_matrix, genre)
             df.drop(columns=columns_to_drop_2, inplace=True)
             result_df = pd.concat([result_df, df], ignore_index=True)
 
@@ -680,16 +742,17 @@ def process_candidates2(candidates, min_elements, movies_features, merged_df, si
             # Use apply to convert genre to string
             genre_str = ', '.join(genre) if isinstance(genre, tuple) else genre
 
-            df = candidate[3]
+            df = candidate[3].copy()
             df.drop(columns=columns_to_drop, inplace=True)
             
             # Merge movies_features after dropping unnecessary columns
             df = df.merge(movies_features, on='id_wiki')
-
+            
+            df['trend_year']=trend_year
             df['trend_number'] = trend_id
             df['trend_genre'] = genre_str
             df['year_from_trend'] = trend_year - df['year']
-
+            df['trend_id']= genre_str + ' of years ' + str(trend_year)
             df = calculate_mean_similarity(df, merged_df, similarity_matrix, genre)
             df.drop(columns=columns_to_drop_2, inplace=True)
 
@@ -700,7 +763,7 @@ def process_candidates2(candidates, min_elements, movies_features, merged_df, si
 
     
 
-def filter_candidates(df, min_movies_per_trend=2):
+def filter_candidates(df, min_movies_per_trend=3):
     # Copy the input DataFrame to avoid modifying the original data
     result_df_copy = df.copy()
     
@@ -708,13 +771,13 @@ def filter_candidates(df, min_movies_per_trend=2):
     result_df_copy.dropna(subset=['mean_similarity_before'], inplace=True)
     result_df_copy.dropna(subset=['mean_similarity_after'], inplace=True)
     # Count movies per trend
-    movie_counts_per_trend = result_df_copy['trend_number'].value_counts()
+    movie_counts_per_trend = result_df_copy['trend_id'].value_counts()
     
     # Find trends with fewer than min_movies_per_trend movies
     trends_with_few_movies = movie_counts_per_trend[movie_counts_per_trend < min_movies_per_trend].index
     
     # Remove rows where 'trend_number' is in trends_with_few_movies
-    result_df_filtered = result_df_copy[~result_df_copy['trend_number'].isin(trends_with_few_movies)]
+    result_df_filtered = result_df_copy[~result_df_copy['trend_id'].isin(trends_with_few_movies)]
     
     unique_names_count = len(result_df_filtered['name'].unique())  # Number of different movies
     print('There are {} different movies'.format(unique_names_count))
@@ -734,8 +797,8 @@ def standardize_features(df, features_to_standardize):
 
 
 
-    result_df_standardized = result_df_copy.groupby('trend_number').apply(standardize_group)
-    result_df_ungrouped = result_df_standardized.drop('trend_number', axis=1).reset_index().copy()
+    result_df_standardized = result_df_copy.groupby('trend_id').apply(standardize_group)
+    result_df_ungrouped = result_df_standardized.drop('trend_id', axis=1).reset_index().copy()
 
 
 
