@@ -13,7 +13,7 @@ https://davidlacour.github.io/TheWestBobersWebsite/
 | Team Member | Tasks |
 |-------------|-------|
 | David       | - website - plots interractifs  |
-| Manuel      | - website |
+| Manuel      | - website - inflation |
 | Arthur      | - shape analysis - trends - ML|
 | Mehdi       | - augmentations -  website |
 | Paul        | - ML - network |
