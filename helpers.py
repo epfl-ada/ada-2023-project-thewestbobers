@@ -873,14 +873,65 @@ def viz_network(movie_name,trend_genre,merged_df,movies_features,pivotal_mov,sim
     plt.show()
 #-------------------------------------------------------------------------------------------------------
 # MEHDI
+    
+def clean_imdb_data(imdb):
+    """
+    Cleans and preprocesses the IMDb dataset.
 
-def clean_gross_income(value):
-    if isinstance(value, str):
-        value = value.replace(',', '').replace('$', '')
-        if 'M' in value:
-            value = float(value.replace('M', '')) * (10**6)
-    return float(value)
+    This function performs several data cleaning steps on an IMDb DataFrame:
+    - Filters out rows where the 'year' field contains a range or is invalid.
+    - Converts the 'year' column to numeric and retains movies released until 2017.
+    - Cleans and converts 'gross_income' and 'votes' columns to numeric values, removing undesired characters.
+    - Extracts and converts the 'duration' field to numeric, dropping rows with invalid or zero duration.
+    - Drops rows with missing critical data such as 'year', 'duration', 'votes', and 'gross_income'.
 
+    Parameters:
+    imdb (DataFrame): The raw IMDb DataFrame to be cleaned.
+
+    Returns:
+    DataFrame: The cleaned IMDb DataFrame with the applied preprocessing steps.
+    """
+    # Cleaning the year column
+    imdb = imdb[~imdb['year'].astype(str).str.contains('-|–')]
+    imdb.loc[:, 'year'] = imdb['year'].str.extract(r'(\d+)', expand=False)
+    imdb.loc[:, 'year'] = imdb['year'].replace('', np.nan)
+    imdb.loc[:, 'year'] = pd.to_numeric(imdb['year'], errors='coerce')
+    imdb.loc[:, 'year'] = imdb['year'].astype('Int64', errors='ignore')
+
+    # Reducing data to movies pre-2018
+    imdb = imdb[imdb['year'] <= 2017].reset_index(drop=True)
+
+    # Cleaning gross income
+    def clean_gross_income(value):
+        if isinstance(value, str):
+            value = value.replace(',', '').replace('$', '')
+            if 'M' in value:
+                value = float(value.replace('M', '')) * (10**6)
+        return float(value)
+
+    imdb.loc[:, 'gross_income'] = imdb['gross_income'].apply(lambda x: clean_gross_income(x))
+    imdb['gross_income'] = pd.to_numeric(imdb['gross_income'], errors='coerce')
+    imdb.loc[:, 'gross_income'] = imdb['gross_income'].replace(0, np.nan)
+
+    # Cleaning votes
+    imdb.loc[:, 'votes'] = imdb['votes'].str.replace(',', '').astype(float)
+    imdb.loc[:, 'votes'] = imdb['votes'].replace(0, np.nan)
+    imdb.loc[pd.isna(imdb['votes']), 'rating'] = np.nan
+    imdb = imdb[imdb['rating'] <= 10]
+
+    # Cleaning duration
+    imdb.loc[:, 'duration'] = imdb['duration'].str.extract(r'(\d+)', expand=False)
+    imdb.loc[:,'duration'] = imdb['duration'].astype(float)
+    imdb.loc[:, 'duration'] = imdb['duration'].replace(0, np.nan)
+    imdb['duration'] = pd.to_numeric(imdb['duration'], errors='coerce')  
+
+    # Dropping rows with missing year and duration
+    imdb = imdb.dropna(subset=['year', 'duration'])
+
+    # Dropping rows where both votes and gross_income are unknown
+    imdb = imdb.dropna(subset=['votes', 'gross_income'], how='all').reset_index(drop=True)
+
+    return imdb    
 
 def check_doublons(df, col_check, year, runtime):
     for c in col_check:
@@ -949,6 +1000,59 @@ def calculate_weighted_average(df, col_check, col_rating, col_weight):
 
     return df
 
+def clean_name_map(df):
+    """
+    Extracts and cleans 'duration' and 'year' columns in a DataFrame.
+
+    This function performs the following operations:
+    - Extracts numeric values from the 'duration' column, treating them as floats.
+    - Replaces any non-numeric or empty values in 'duration' with np.nan.
+    - Extracts the year from the 'year' column, treating them as floats.
+    - Replaces any non-numeric or empty values in 'year' with np.nan, and converts the column to 'Int64' dtype.
+    - Drops rows with missing data in either 'duration' or 'year' columns.
+
+    Parameters:
+    df (DataFrame): The DataFrame with 'duration' and 'year' columns to be processed.
+
+    Returns:
+    DataFrame: The processed DataFrame with cleaned 'duration' and 'year' columns.
+    """
+    # Extract and clean duration
+    df['duration'] = df['duration'].str.extract('(\d+\.\d+|\d+)').astype(float)
+    df['duration'] = df['duration'].replace('', np.nan)
+
+    # Extract and clean year
+    df['year'] = df['year'].str.extract('(\d+)').astype(float)
+    df['year'] = df['year'].replace('', np.nan)
+    df.loc[:, 'year'] = df['year'].astype('Int64', errors='ignore')
+
+    # Drop rows with missing data in duration and year
+    cleaned_df = df.dropna(subset=['duration', 'year']).reset_index(drop=True)
+
+    return cleaned_df
+
+def clean_column_str(df, column_name):
+    """
+    Cleans a specified column in a DataFrame.
+
+    This function performs the following cleaning operations on the specified column:
+    - Removes dashes ('-') and colons (':').
+    - Replaces multiple whitespace characters with a single space.
+    - Trims leading and trailing whitespace.
+
+    Parameters:
+    df (DataFrame): The DataFrame containing the column to be cleaned.
+    column_name (str): The name of the column to clean.
+
+    Returns:
+    DataFrame: The DataFrame with the cleaned column.
+    """
+    if column_name in df.columns:
+        df[column_name] = df[column_name].apply(lambda x: str(x).replace('-', '').replace(':', ''))
+        df[column_name] = df[column_name].str.replace('\s+', ' ', regex=True).str.strip()
+    else:
+        print(f"Column '{column_name}' not found in the DataFrame.")
+    return df
 
 def drop_duplicates(df, col_check):
     """
@@ -969,6 +1073,197 @@ def drop_duplicates(df, col_check):
 
     return df_cleaned
 
+def plot_yearly_distribution_imdb(df):
+    """
+    Plots the yearly distribution of ratings and revenues from a given DataFrame.
+
+    This function creates two subplots:
+    1. A bar plot showing the number of ratings per year.
+    2. A bar plot showing the total revenue per year.
+
+    Parameters:
+    df (DataFrame): The DataFrame containing 'year', 'rating', and 'revenue' columns.
+
+    The function doesn't return anything but displays the plots.
+    """
+    # Grouping data
+    revenue_per_year = df.groupby('year')['revenue'].count().reset_index()
+    reviews_count_per_year = df.groupby('year')['rating'].count().reset_index()
+
+    # Creating figure and subplots
+    fig = plt.figure(figsize=(14, 7))
+
+    # Plot for number of ratings per year
+    plt.subplot(2, 1, 1)  # 2 rows, 1 column, first subplot
+    plt.bar(reviews_count_per_year['year'], reviews_count_per_year['rating'])
+    plt.xlabel('Year')
+    plt.ylabel('Number of Ratings')
+    plt.title('Number of Ratings per Year')
+
+    # Plot for revenue per year
+    plt.subplot(2, 1, 2)  # 2 rows, 1 column, second subplot
+    plt.bar(revenue_per_year['year'], revenue_per_year['revenue'])
+    plt.xlabel('Year')
+    plt.ylabel('Total Revenue (in millions)')
+    plt.title('Total Revenue per Year')
+
+    plt.tight_layout()
+    plt.show()
+
+def fuse_and_clean_annex(df):
+    """
+    Fuses and cleans various columns in the provided DataFrame.
+
+    This function performs the following operations:
+    - Fuses revenue data from two columns into one.
+    - Fuses ratings and votes data from multiple columns into single 'rating' and 'votes' columns.
+    - Addresses NaN values in the 'alt_name' column, replacing them with values from the 'name' column.
+    - Calls external functions 'fuse_scores_v2' and 'fuse_duplicates_v2' for fusing scores and removing duplicates.
+
+    Parameters:
+    df (DataFrame): The DataFrame to be processed.
+
+    Returns:
+    DataFrame: The processed DataFrame with fused and cleaned data.
+    """
+    # Fuse the revenue columns
+    df['revenue'] = df.apply(lambda row: fuse_columns_v2(row['revenue_x'], row['revenue_y']), axis=1)
+    df['revenue'] = pd.to_numeric(df['revenue'], errors='coerce')
+    df = df.drop(['revenue_x', 'revenue_y'], axis=1)
+
+    # Fuse the rating and votes columns
+    df = fuse_scores_v2(df, score_col1='rating_x', score_col2='rating_y', votes_col1='votes_x', votes_col2='votes_y', score_col='rating', votes_col='votes')
+
+    # Addressing alt_name nan issue
+    df['alt_name'] = df['alt_name'].replace('nan', None)
+    df['alt_name'].fillna(df['name'], inplace=True)
+    
+    # Fuse duplicates
+    df = fuse_duplicates_v2(df=df, col_check=['name', 'alt_name'], year='year', runtime='runtime', col_null=['revenue'], col_score='rating', col_weight='votes')
+
+    return df
+
+def compare_revenue_columns(df, col1, col2):
+    """
+    Compares two revenue columns in a DataFrame and prints the percentage of times 
+    one is higher, lower, or equal to the other.
+
+    Parameters:
+    df (DataFrame): The DataFrame containing the revenue columns.
+    col1 (str): The name of the first revenue column.
+    col2 (str): The name of the second revenue column.
+
+    The function prints the comparison results and doesn't return anything.
+    """
+    # Ensure the columns exist
+    if col1 not in df.columns or col2 not in df.columns:
+        print(f"One or both columns '{col1}' and '{col2}' do not exist in the DataFrame.")
+        return
+
+    # Drop rows where either column is NaN
+    valid_rows = df.dropna(subset=[col1, col2])
+
+    # Calculate percentages
+    percentage_higher = (valid_rows[col1] > valid_rows[col2]).mean() * 100
+    percentage_lower = (valid_rows[col1] < valid_rows[col2]).mean() * 100
+    percentage_equal = (valid_rows[col1] == valid_rows[col2]).mean() * 100
+
+    # Print results
+    print(f"The percentage of times '{col1}' is higher than '{col2}' when both are not NaN is: {percentage_higher:.2f}%") 
+    print(f"The percentage of times '{col1}' is lower than '{col2}' when both are not NaN is: {percentage_lower:.2f}%") 
+    print(f"The percentage of times '{col1}' is equal to '{col2}' when both are not NaN is: {percentage_equal:.2f}%")
+
+def scale_and_fuse_revenue(df, col_to_scale, col_reference, new_col_name, drop_cols, rename_cols):
+    """
+    Scales underestimated revenues in one column based on another column and fuses them into a single column.
+
+    Parameters:
+    df (DataFrame): The DataFrame containing the revenue columns.
+    col_to_scale (str): The name of the revenue column to be scaled.
+    col_reference (str): The name of the reference revenue column for scaling.
+    new_col_name (str): The name for the new fused revenue column.
+    drop_cols (list): A list of column names to be dropped from the DataFrame.
+    rename_cols (dict): A dictionary for renaming columns {old_name: new_name}.
+
+    Returns:
+    DataFrame: The DataFrame with scaled and fused revenue data and updated columns.
+    """
+    # Calculate scaling factor
+    scaling_factor = (df[df[col_to_scale] < df[col_reference]][col_reference] / 
+                      df[df[col_to_scale] < df[col_reference]][col_to_scale]).median()
+    print('The scaling factor is:', scaling_factor)
+
+    # Apply scaling factor
+    df.loc[df[col_to_scale] < df[col_reference], col_to_scale] = (
+        df[df[col_to_scale] < df[col_reference]][col_to_scale] * scaling_factor
+    )
+
+    # Convert to numeric
+    df[col_to_scale] = pd.to_numeric(df[col_to_scale], errors='coerce')
+
+    # Fuse revenues
+    df[new_col_name] = df.apply(lambda row: fuse_columns_v2(row[col_to_scale], row[col_reference]), axis=1)
+
+    # Drop and rename columns
+    df = df.drop(columns=drop_cols)
+    df = df.rename(columns=rename_cols)
+
+    return df
+
+def process_movies3_stats(df):
+    """
+    Processes the movies3_stats DataFrame by fusing scores, fusing revenues, dropping and renaming columns,
+    and filtering out rows with NaN values in 'revenue' or 'votes'.
+
+    Parameters:
+    df (DataFrame): The DataFrame to be processed.
+
+    Returns:
+    DataFrame: The processed DataFrame.
+    """
+    # Fuse scores
+    df = fuse_scores_stats(df=df, score_col1='rating_x', score_col2='rating_y', votes_col1='votes_x', votes_col2='votes_y')
+
+    # Fuse revenue columns
+    df['revenue'] = df.apply(lambda row: fuse_columns(x=row['revenue_x'], y=row['revenue_y'], column_name='') 
+                             if pd.isna(row['revenue_y']) else row['revenue_y'], axis=1)
+
+    # Drop and rename columns
+    df = df.drop(columns=['revenue_x', 'revenue_y', 'rating_x', 'votes_x', 'countries_x', 'runtime_x'])
+    df = df.rename(columns={'runtime_y': 'runtime', 'rating_y': 'rating', 'votes_y': 'votes', 'countries_y': 'countries'})
+    
+    # Filter out rows with NaN in 'revenue' or 'votes'
+    mask = (df['revenue'].isna()) | (df['votes'].isna())
+    df = df[~mask]
+
+    return df
+
+def clean_and_condense_awards(df):
+    """
+    Cleans and condenses an awards DataFrame.
+
+    The function performs the following operations:
+    - Removes rows where the 'name' column is NaN.
+    - Cleans the 'name' column by removing certain characters and normalizing whitespace.
+    - Condenses the DataFrame to aggregate information for each unique movie.
+
+    Parameters:
+    df (DataFrame): The awards DataFrame to be processed.
+
+    Returns:
+    DataFrame: The cleaned and condensed awards DataFrame.
+    """
+    # Remove missing name rows
+    df_clean = df.loc[~df['name'].isna()].reset_index(drop=True)
+
+    # Clean the names
+    df_clean = clean_column_str(df_clean, 'name')
+
+    # Condense the DataFrame
+    aggregation_functions = {'winner': list}
+    df_condensed = df_clean.groupby(['name', 'year']).agg(aggregation_functions).reset_index()
+
+    return df_condensed
 
 def fuse_columns_v2(x, y):
     if pd.notna(x) and pd.notna(y):
