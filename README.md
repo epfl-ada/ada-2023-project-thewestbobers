@@ -47,7 +47,7 @@ These two datasets ([1](https://www.kaggle.com/datasets/ashishjangra27/imdb-movi
 
 ## Final Dataframe
 
-We performed processes of data exploration, cleaning and augmentation by merging the datasets. The exact procedure can be consulted in detail in the notebook [milestoneP3](milestoneP3).
+We performed processes of data exploration, cleaning and augmentation by merging the datasets. The exact procedure can be consulted in detail in the notebook [milestoneP3](milestoneP3.ipynb).
 
 We ended up with a clean dataset, containing movies in English that have been produced in the USA between 1910 and 2010. The final dataframe includes the following characteristics for each movie: 
 
@@ -64,6 +64,9 @@ We ended up with a clean dataset, containing movies in English that have been pr
 
 
 # Organization within the team 👥
+
+<img src="images/organigram.PNG" style="width:100%; height:auto;">
+
 | Team Member | Tasks |
 |-------------|-------|
 | David       | - website - plots interractifs |
