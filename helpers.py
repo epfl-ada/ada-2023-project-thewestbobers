@@ -41,22 +41,18 @@ import itertools
 
 #-------------------------------------------------------------------------------------------------------
 # ARTHUR
-def select_subsets(movies):
+def select_subsets(movies, min_len=0):
     '''Return subsets of the 'movies' dataset, by genres
     don't use genres with too few movies'''
-    min_len = 10
-
     all_genres = list(set(itertools.chain.from_iterable(movies.genres.tolist())))
     all_genres.sort()
     subsets = [(g, create_subset(movies,g)) for g in all_genres]
     subsets = [element for element in subsets if len(element[1])>min_len]
     return subsets
 
-def select_subsets_double(subsets):
+def select_subsets_double(subsets, min_len=0):
     '''Return subsets of the 'movies' dataset, by genres
     don't use genres with too few movies'''
-    min_len = 100
-
     subsets_double = []
     for i, s in enumerate(subsets):
         genres_double = list(set(itertools.chain.from_iterable(s[1].genres.tolist()))-set([s[0]]))
@@ -338,33 +334,25 @@ def show_candidates_double(movies, subsets, candidates, key1, key2, peak='first'
     c = candidates[i][3].sort_values('year')
     return c
 
-def get_pivotals_of_genres(pivotals):
-    pivotals_of_genres = {}
-    for id, pivotal in pivotals.items():
-        # Extracting the 'trend_genre' value from the series
-        pivotal_genre = pivotal['trend_genre']
-        
-        # Adding the key to the list of entries for the corresponding 'trend_genre'
-        if pivotal_genre in pivotals_of_genres:
-            pivotals_of_genres[pivotal_genre].add(id)  # Add the key to the existing set
-        else:
-            pivotals_of_genres[pivotal_genre] = {id}   # Create a new set with the current key
-    return pivotals_of_genres
+def get_pivotals_simple(movies, subsets, pivotals, key):
+    p = pivotals[pivotals['trend_genre']==key]
+    pivotal_year = []
+    pivotal_name = []
+    for id in p['id_wiki']:
+        pivotal_year.append(movies[movies.id_wiki==id]['year'].values[0])
+        pivotal_name.append(movies[movies.id_wiki==id]['name'].values[0])
+    fig = viz_peaks(movies, subsets, find_subset(subsets, key), pivotals=(pivotal_year, pivotal_name))
+    return fig
 
-def get_pivotals(movies, subsets, pivotals_list, pivotals_of_genres, key, show=True):
-    entries = pivotals_of_genres[key]
-
-    pivotals_of_g = {key: pivotals_list[key] for key in entries if key in pivotals_list}
-    pivotal_year = [p[1]['year'] for p in pivotals_of_g.items()]
-    pivotal_name = [p[1]['name'] for p in pivotals_of_g.items()]
-
-    if show==True:
-        fig = viz_peaks(movies, subsets, find_subset(subsets, key), pivotals=(pivotal_year, pivotal_name))
-
-    pivotals = []
-    for y,n in zip(pivotal_year, pivotal_name):
-        pivotals.append((y,n))
-    return pivotals, fig
+def get_pivotals_double(movies, subsets, pivotals, key1, key2):
+    p = pivotals[pivotals['trend_genre']==(key1, key2)]
+    pivotal_year = []
+    pivotal_name = []
+    for id in p['id_wiki']:
+        pivotal_year.append(movies[movies.id_wiki==id]['year'].values[0])
+        pivotal_name.append(movies[movies.id_wiki==id]['name'].values[0])
+    fig = viz_peaks(movies, subsets, find_subset_double(subsets, key1, key2), pivotals=(pivotal_year, pivotal_name))
+    return fig
 
 def show_pivotal(pivotals, candidates, i):
     pivotal_genre = candidates[pivotals[i].trend_number][0]
@@ -377,12 +365,17 @@ def show_pivotal(pivotals, candidates, i):
     print('\t\t(Quality {})'.format('TBD'))
     print('')
 
-def get_all_viz_pivotal(movies, subsets, pivotals_list, pivotals_of_genres):
+def get_all_viz_pivotal(movies, subsets, subsets_double, pivotals_simple, pivotals_double):
     '''Save all figs in a folder'''
     folder_path = os.path.abspath(os.curdir)
-    for i, g in enumerate(list(pivotals_of_genres.keys())):
-        pivotals_i, fig = get_pivotals(movies, subsets, pivotals_list, pivotals_of_genres, g, show=True)
-        file_name = 'img/pivotals/'+str(i)+'_Pivotals_'+g.replace('/',' ')+'.png'  # or use .jpg, .pdf, etc.
+    for i, key in enumerate(list(pivotals_simple['trend_genre'].unique())):
+        fig = get_pivotals_simple(movies, subsets, pivotals_simple, key)
+        file_name = 'images/pivotals/'+str(i)+'_Pivotals_'+key.replace('/',' ')+'.png'  # or use .jpg, .pdf, etc.
+        save_path = os.path.join(folder_path, file_name)
+        fig.savefig(save_path, dpi=300)
+    for i, key in enumerate(list(pivotals_double['trend_genre'].unique())):
+        fig = get_pivotals_double(movies, subsets_double, pivotals_double, key[0], key[1])
+        file_name = 'images/pivotals/'+str(i+len(list(pivotals_simple['trend_genre'].unique())))+'_Pivotals_'+str(key).replace('/',' ')+'.png'  # or use .jpg, .pdf, etc.
         save_path = os.path.join(folder_path, file_name)
         fig.savefig(save_path, dpi=300)
 
